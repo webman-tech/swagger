@@ -3,11 +3,19 @@
   "type": "library",
   "license": "MIT",
   "description": "Webman plugin webman-tech/swagger",
-  "require": {
-  },
   "autoload": {
     "psr-4": {
       "WebmanTech\\Swagger\\": "src"
     }
+  },
+  "require": {
+    "php": ">=7.2",
+    "zircote/swagger-php": "^4.7"
+  },
+  "require-dev": {
+    "workerman/webman-framework": "^1.5"
+  },
+  "config": {
+    "sort-packages": true
   }
 }

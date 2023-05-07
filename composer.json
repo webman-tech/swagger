@@ -1,0 +1,13 @@
+{
+  "name": "webman-tech/swagger",
+  "type": "library",
+  "license": "MIT",
+  "description": "Webman plugin webman-tech/swagger",
+  "require": {
+  },
+  "autoload": {
+    "psr-4": {
+      "WebmanTech\\Swagger\\": "src"
+    }
+  }
+}

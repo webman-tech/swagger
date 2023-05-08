@@ -10,6 +10,7 @@
   },
   "require": {
     "php": ">=7.2",
+    "ext-json": "*",
     "zircote/swagger-php": "^4.7"
   },
   "require-dev": {

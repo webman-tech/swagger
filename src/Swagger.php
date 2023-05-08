@@ -4,6 +4,7 @@ namespace WebmanTech\Swagger;
 
 use Webman\Route;
 use WebmanTech\Swagger\Controller\OpenapiController;
+use WebmanTech\Swagger\Helper\ArrayHelper;
 use WebmanTech\Swagger\Middleware\HostForbiddenMiddleware;
 
 class Swagger
@@ -13,7 +14,9 @@ class Swagger
         $config = array_merge(
             [
                 'enable' => true,
-                'scan_paths' => [app_path()],
+                'openapi_doc' => [
+                    'scan_path' => app_path(),
+                ],
             ],
             config('plugin.webman-tech.swagger.app.global_route', [])
         );
@@ -25,25 +28,26 @@ class Swagger
 
     public function registerRoute(array $config = [])
     {
-        $config = array_merge(
+        $config = ArrayHelper::merge(
             [
                 'route_prefix' => '/openapi',
                 'host_forbidden' => [],
-                'scan_paths' => [],
+                'swagger_ui' => [],
+                'openapi_doc' => [],
             ],
             $config
         );
 
         $hostForbiddenMiddleware = new HostForbiddenMiddleware($config['host_forbidden']);
-        $openapiController = new OpenapiController([
-            'scan_paths' => $config['scan_paths'] ?? [],
-        ]);
+        $controller = new OpenapiController();
 
-        Route::get($config['route_prefix'], function () use ($openapiController) {
-            return $openapiController->index();
+        $docRoute = 'doc';
+
+        Route::get($config['route_prefix'], function () use ($controller, $docRoute, $config) {
+            return $controller->swaggerUI($docRoute, $config['swagger_ui']);
         })->middleware($hostForbiddenMiddleware);
-        Route::get("{$config['route_prefix']}/doc", function () use ($openapiController) {
-            return $openapiController->doc();
+        Route::get("{$config['route_prefix']}/{$docRoute}", function () use ($controller, $config) {
+            return $controller->openapiDoc($config['openapi_doc']);
         })->middleware($hostForbiddenMiddleware);
     }
 }

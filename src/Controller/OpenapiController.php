@@ -6,65 +6,77 @@ use InvalidArgumentException;
 use OpenApi\Generator;
 use OpenApi\Util;
 use Webman\Http\Response;
+use WebmanTech\Swagger\Helper\ArrayHelper;
+use WebmanTech\Swagger\Helper\JsExpression;
 
 class OpenapiController
 {
-    protected $config = [
-        'scan_paths' => [],
-    ];
     private $cacheKey;
     private static $memoryCached = [];
 
-    public function __construct(array $config = [])
+    public function __construct()
     {
-        $this->config = array_merge($this->config, $config);
         $this->cacheKey = uniqid();
     }
 
-    public function index(): Response
+    public function swaggerUI(string $docRoute, array $config = []): Response
     {
-        $assetBasePath = 'https://unpkg.com/swagger-ui-dist';
+        $config = ArrayHelper::merge(
+            [
+                'view' => 'swagger-ui',
+                'view_path' => '../vendor/webman-tech/swagger/src', // 相对 app_path() 的路径
+                'data' => [
+                    // @link https://github.com/swagger-api/swagger-ui/blob/master/dist/swagger-initializer.js
+                    'css' => [
+                        'https://unpkg.com/swagger-ui-dist/swagger-ui.css',
+                        //'https://unpkg.com/swagger-ui-dist/index.css',
+                    ],
+                    'js' => [
+                        'https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js',
+                        //'https://unpkg.com/swagger-ui-dist/swagger-ui-standalone-preset.js',
+                    ],
+                    'title' => config('app.name', 'swagger') . ' - openapi',
+                    'ui_config' => [
+                        // @link https://swagger.io/docs/open-source-tools/swagger-ui/usage/configuration/
+                        'dom_id' => '#swagger-ui',
+                        'persistAuthorization' => true,
+                        'deepLinking' => true,
+                        'filter' => '',
+                        /*'presets' => [
+                            new JsExpression('SwaggerUIBundle.presets.apis'),
+                            new JsExpression('SwaggerUIStandalonePreset'),
+                        ],
+                        'plugins' => [
+                            new JsExpression('SwaggerUIBundle.plugins.DownloadUrl'),
+                        ],
+                        'layout' => 'StandaloneLayout',*/
+                    ],
+                ],
+            ],
+            config('plugin.webman-tech.swagger.app.swagger_ui', []),
+            $config
+        );
+        $config['data']['ui_config']['url'] = new JsExpression("window.location.pathname + '/{$docRoute}'");
 
-        $html = <<<HTML
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="utf-8" />
-                <meta name="viewport" content="width=device-width, initial-scale=1" />
-                <meta
-                    name="description"
-                    content="SwaggerUI"
-                />
-                <title>SwaggerUI</title>
-                <link rel="stylesheet" href="{$assetBasePath}/swagger-ui.css" />
-            </head>
-            <body>
-            <div id="swagger-ui"></div>
-            <script src="{$assetBasePath}/swagger-ui-bundle.js" crossorigin></script>
-            <script>
-                window.onload = () => {
-                    window.ui = SwaggerUIBundle({
-                        // @link https://github.com/swagger-api/swagger-ui/blob/master/docs/usage/configuration.md
-                        dom_id: '#swagger-ui',
-                        url: window.location.pathname + '/doc',
-                        filter: '',
-                        persistAuthorization: true,
-                    });
-                };
-            </script>
-            </body>
-            </html>
-HTML;
-        return response($html);
+        return raw_view($config['view'], $config['data'], $config['view_path']);
     }
 
-    public function doc(): Response
+    public function openapiDoc(array $config = []): Response
     {
+        $config = ArrayHelper::merge(
+            [
+                'scan_path' => [],
+                'scan_exclude' => null,
+            ],
+            config('plugin.webman-tech.swagger.app.openapi_doc', []),
+            $config
+        );
+
         if (!isset(static::$memoryCached[$this->cacheKey])) {
-            if (!$this->config['scan_paths']) {
-                throw new InvalidArgumentException('scan_paths must be set');
+            if (!$config['scan_path']) {
+                throw new InvalidArgumentException('openapi_doc.scan_path must be set');
             }
-            $openapi = Generator::scan(Util::finder($this->config['scan_paths']));
+            $openapi = Generator::scan(Util::finder($config['scan_path'], $config['scan_exclude']));
             $yaml = $openapi->toYaml();
 
             static::$memoryCached[$this->cacheKey] = $yaml;

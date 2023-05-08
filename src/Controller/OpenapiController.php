@@ -2,9 +2,12 @@
 
 namespace WebmanTech\Swagger\Controller;
 
-use InvalidArgumentException;
+use Closure;
+use OpenApi\Annotations as OA;
 use OpenApi\Generator;
 use OpenApi\Util;
+use Symfony\Component\Finder\Finder;
+use Throwable;
 use Webman\Http\Response;
 use WebmanTech\Swagger\Helper\ArrayHelper;
 use WebmanTech\Swagger\Helper\JsExpression;
@@ -67,16 +70,19 @@ class OpenapiController
             [
                 'scan_path' => [],
                 'scan_exclude' => null,
+                'modify' => null,
             ],
             config('plugin.webman-tech.swagger.app.openapi_doc', []),
             $config
         );
 
         if (!isset(static::$memoryCached[$this->cacheKey])) {
-            if (!$config['scan_path']) {
-                throw new InvalidArgumentException('openapi_doc.scan_path must be set');
+            $openapi = $this->scanAndGenerateOpenapi($config['scan_path'], $config['scan_exclude']);
+
+            if ($config['modify'] instanceof Closure) {
+                $config['modify']($openapi);
             }
-            $openapi = Generator::scan(Util::finder($config['scan_path'], $config['scan_exclude']));
+
             $yaml = $openapi->toYaml();
 
             static::$memoryCached[$this->cacheKey] = $yaml;
@@ -86,5 +92,52 @@ class OpenapiController
         return response($yaml, 200, [
             'Content-Type' => 'application/x-yaml',
         ]);
+    }
+
+    /**
+     * 扫描并生成 yaml
+     * @param string|array|Finder $scanPath
+     * @param array|null|string $scanExclude
+     * @param int $errorCount
+     * @return OA\OpenApi
+     * @throws Throwable
+     */
+    private function scanAndGenerateOpenapi($scanPath, $scanExclude = null, int $errorCount = 0): OA\OpenApi
+    {
+        $requiredElements = [
+            'info' => __DIR__ . '/RequiredElements/Info',
+            'pathItem' => __DIR__ . '/RequiredElements/PathItem',
+        ];
+
+        if (is_string($scanPath)) {
+            $scanPath = [$scanPath];
+        }
+        if (is_array($scanPath) && !$scanPath) {
+            $scanPath = array_values($requiredElements);
+        }
+
+        try {
+            return Generator::scan(Util::finder($scanPath, $scanExclude));
+        } catch (Throwable $e) {
+            if ($errorCount > count($requiredElements)) {
+                throw $e;
+            }
+
+            // http://zircote.github.io/swagger-php/guide/required-elements.html
+            if ($e->getMessage() === 'Required @OA\Info() not found') {
+                if (is_array($scanPath)) {
+                    $scanPath = array_merge($scanPath, [$requiredElements['info']]);
+                }
+                return $this->scanAndGenerateOpenapi($scanPath, $scanExclude, $errorCount + 1);
+            }
+            if ($e->getMessage() === 'Required @OA\PathItem() not found') {
+                if (is_array($scanPath)) {
+                    $scanPath = array_merge($scanPath, [$requiredElements['pathItem']]);
+                }
+                return $this->scanAndGenerateOpenapi($scanPath, $scanExclude, $errorCount + 1);
+            }
+
+            throw $e;
+        }
     }
 }

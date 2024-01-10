@@ -14,14 +14,6 @@ use WebmanTech\Swagger\Helper\JsExpression;
 
 class OpenapiController
 {
-    private $cacheKey;
-    private static $memoryCached = [];
-
-    public function __construct()
-    {
-        $this->cacheKey = uniqid();
-    }
-
     public function swaggerUI(string $docRoute, array $config = []): Response
     {
         $config = ArrayHelper::merge(
@@ -64,19 +56,27 @@ class OpenapiController
         return raw_view($config['view'], $config['data'], $config['view_path']);
     }
 
+    private static $docCache = [];
+
     public function openapiDoc(array $config = []): Response
     {
         $config = ArrayHelper::merge(
             [
-                'scan_path' => [],
-                'scan_exclude' => null,
-                'modify' => null,
+                'scan_path' => [], // 扫描的目录
+                'scan_exclude' => null, // 扫描忽略的
+                'modify' => null, // 修改 $openapi 对象
+                'cache_key' => null, // 如何缓存
             ],
             config('plugin.webman-tech.swagger.app.openapi_doc', []),
             $config
         );
 
-        if (!isset(static::$memoryCached[$this->cacheKey])) {
+        if (is_callable($config['cache_key'])) {
+            $config['cache_key'] = $config['cache_key']();
+        }
+        $cacheKey = $config['cache_key'] ?: __CLASS__;
+
+        if (!isset(static::$docCache[$cacheKey])) {
             $openapi = $this->scanAndGenerateOpenapi($config['scan_path'], $config['scan_exclude']);
 
             if ($config['modify'] instanceof Closure) {
@@ -85,9 +85,9 @@ class OpenapiController
 
             $yaml = $openapi->toYaml();
 
-            static::$memoryCached[$this->cacheKey] = $yaml;
+            static::$docCache[$cacheKey] = $yaml;
         }
-        $yaml = static::$memoryCached[$this->cacheKey];
+        $yaml = static::$docCache[$cacheKey];
 
         return response($yaml, 200, [
             'Content-Type' => 'application/x-yaml',

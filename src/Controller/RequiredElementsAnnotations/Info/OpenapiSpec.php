@@ -1,6 +1,6 @@
 <?php
 
-namespace WebmanTech\Swagger\Controller\RequiredElements\Info;
+namespace WebmanTech\Swagger\Controller\RequiredElementsAnnotations\Info;
 
 use OpenApi\Annotations as OA;
 

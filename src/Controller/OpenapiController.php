@@ -3,6 +3,7 @@
 namespace WebmanTech\Swagger\Controller;
 
 use Closure;
+use Doctrine\Common\Annotations\Annotation;
 use OpenApi\Annotations as OA;
 use OpenApi\Generator;
 use OpenApi\Util;
@@ -14,6 +15,25 @@ use WebmanTech\Swagger\Helper\JsExpression;
 
 class OpenapiController
 {
+    private $canUseAnnotations;
+    private $canUseAttributes;
+    private $requiredElements;
+
+    public function __construct()
+    {
+        $this->canUseAnnotations = class_exists(Annotation::class);
+        $this->canUseAttributes = class_exists(\Attribute::class);
+
+        if (!$this->canUseAnnotations && !$this->canUseAttributes) {
+            throw new \Exception('Please install doctrine/annotations or use php>=8.0');
+        }
+
+        $this->requiredElements = [
+            'info' => $this->canUseAnnotations ? __DIR__ . '/RequiredElementsAnnotations/Info' : __DIR__ . '/RequiredElementsAttributes/Info',
+            'pathItem' => $this->canUseAnnotations ? __DIR__ . '/RequiredElementsAnnotations/PathItem' : __DIR__ . '/RequiredElementsAttributes/PathItem',
+        ];
+    }
+
     public function swaggerUI(string $docRoute, array $config = []): Response
     {
         $config = ArrayHelper::merge(
@@ -104,10 +124,7 @@ class OpenapiController
      */
     private function scanAndGenerateOpenapi($scanPath, $scanExclude = null, int $errorCount = 0): OA\OpenApi
     {
-        $requiredElements = [
-            'info' => __DIR__ . '/RequiredElements/Info',
-            'pathItem' => __DIR__ . '/RequiredElements/PathItem',
-        ];
+        $requiredElements = $this->requiredElements;
 
         if (is_string($scanPath)) {
             $scanPath = [$scanPath];

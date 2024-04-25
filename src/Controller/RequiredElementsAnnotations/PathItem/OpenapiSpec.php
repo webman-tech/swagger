@@ -1,15 +1,15 @@
 <?php
 
-namespace WebmanTech\Swagger\Controller\RequiredElements\PathItem;
+namespace WebmanTech\Swagger\Controller\RequiredElementsAnnotations\PathItem;
 
 use OpenApi\Annotations as OA;
 
 class OpenapiSpec
 {
     /**
-     * 零配置例子
+     * Zero configuration example
      *
-     * 会在添加新的 api 接口后自动删除
+     * Will be deleted automatically when adding a new api interface
      *
      * @OA\Get(
      *     path="/example",

@@ -11,7 +11,7 @@ class OpenapiSpec
         summary: 'Zero configuration example',
         description: 'Will be deleted automatically when adding a new api interface',
         responses: [
-            new OAA\Response(response: 200, description: 'The data')
+            new OA\Response(response: 200, description: 'The data')
         ],
     )]
     public function example()

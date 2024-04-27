@@ -6,6 +6,8 @@ use Webman\Route;
 use WebmanTech\Swagger\Controller\OpenapiController;
 use WebmanTech\Swagger\Helper\ArrayHelper;
 use WebmanTech\Swagger\Middleware\HostForbiddenMiddleware;
+use WebmanTech\Swagger\RouteAnnotation\Reader;
+use WebmanTech\Swagger\RouteAnnotation\Register;
 
 class Swagger
 {
@@ -33,7 +35,9 @@ class Swagger
                 'route_prefix' => '/openapi',
                 'host_forbidden' => [],
                 'swagger_ui' => [],
-                'openapi_doc' => [],
+                'openapi_doc' => [
+                    'register_webman_route' => false,
+                ],
             ],
             $config
         );
@@ -49,5 +53,11 @@ class Swagger
         Route::get("{$config['route_prefix']}/{$docRoute}", function () use ($controller, $config) {
             return $controller->openapiDoc($config['openapi_doc']);
         })->middleware($hostForbiddenMiddleware);
+
+        if ($config['openapi_doc']['register_webman_route']) {
+            $reader = new Reader();
+            $register = new Register($reader->getData($config['openapi_doc']['scan_path']));
+            $register->registerRoute();
+        }
     }
 }

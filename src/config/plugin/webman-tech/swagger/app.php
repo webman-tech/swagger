@@ -24,6 +24,10 @@ return [
     ],
     'openapi_doc' => [
         /**
+         * 是否自动注册 webman 的路由
+         */
+        'register_webman_route' => false,
+        /**
          * 全局的 openapi doc 配置
          * @see \WebmanTech\Swagger\Controller\OpenapiController::openapiDoc()
          */

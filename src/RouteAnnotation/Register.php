@@ -4,7 +4,6 @@ namespace WebmanTech\Swagger\RouteAnnotation;
 
 use Webman\Route;
 use WebmanTech\Swagger\RouteAnnotation\DTO\RouteConfigDTO;
-use WebmanTech\Swagger\RouteAnnotation\Middleware\ValidateMiddleware;
 
 class Register
 {
@@ -35,13 +34,8 @@ class Register
     {
         foreach ($this->config as $key => $routeConfig) {
             Route::add($routeConfig->method, $routeConfig->path, [$routeConfig->controller, $routeConfig->action])
-                ->name($key) // TODO prefix?
-                ->middleware([
-                    // TODO miiddleware
-                    /*function () {
-                        return new ValidateMiddleware($this->config);
-                    }*/
-                ]);
+                ->name($routeConfig->name ?: $key)
+                ->middleware($routeConfig->getRouteMiddlewares());
         }
     }
 }

@@ -10,8 +10,8 @@ use OpenApi\Annotations as OA;
 use OpenApi\Context;
 use OpenApi\Generator;
 use Symfony\Component\Finder\Finder;
-use WebmanTech\Swagger\RouteAnnotation\DTO\RequestParamDTO;
 use WebmanTech\Swagger\RouteAnnotation\DTO\RequestBodyDTO;
+use WebmanTech\Swagger\RouteAnnotation\DTO\RequestParamDTO;
 use WebmanTech\Swagger\RouteAnnotation\DTO\RouteConfigDTO;
 
 class Reader
@@ -31,7 +31,7 @@ class Reader
 
     /**
      * @param $pathOrFile
-     * @return array|<string, RouteConfigDTO>
+     * @return array<string, RouteConfigDTO>
      */
     public function getData($pathOrFile): array
     {
@@ -81,15 +81,19 @@ class Reader
             $desc = $desc ? $desc . "({$operation->description})" : $operation->description;
         }
 
+        $x = Generator::isDefault($operation->x) ? [] : $operation->x;
+
         return new RouteConfigDTO([
             'desc' => $desc,
             'method' => strtoupper($operation->method),
-            'path' => $operation->path,
+            'path' => $x[RouteConfigDTO::X_PATH] ?? $operation->path,
             'controller' => implode('\\', array_filter([
                 $operation->_context->namespace ?? '',
                 $operation->_context->class ?? '',
             ])),
             'action' => $operation->_context->method ?? '',
+            'name' => $x[RouteConfigDTO::X_NAME] ?? null,
+            'middlewares' => $x[RouteConfigDTO::X_MIDDLEWARE] ?? null,
             'request_param' => $this->parseRequestParam($operation->parameters),
             'request_body' => $this->parseRequestBody($operation->requestBody),
             'request_body_required' => Generator::isDefault($operation->requestBody)
@@ -100,7 +104,7 @@ class Reader
 
     /**
      * @param string|OA\Parameter[] $parameters
-     * @return array|<string, <string, RequestParamDTO>>
+     * @return array<string, <string, RequestParamDTO>>
      */
     private function parseRequestParam($parameters): array
     {
@@ -136,7 +140,7 @@ class Reader
 
     /**
      * @param string|OA\RequestBody $requestBody
-     * @return array|<string, <string, RequestBodyDTO>>
+     * @return array<string, <string, RequestBodyDTO>>
      */
     private function parseRequestBody($requestBody): array
     {

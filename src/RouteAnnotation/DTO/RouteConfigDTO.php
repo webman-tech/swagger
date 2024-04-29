@@ -4,6 +4,7 @@ namespace WebmanTech\Swagger\RouteAnnotation\DTO;
 
 use InvalidArgumentException;
 use support\Container;
+use WebmanTech\Swagger\DTO\BaseDTO;
 
 /**
  * @property string $desc
@@ -13,8 +14,8 @@ use support\Container;
  * @property string $action
  * @property null|string $name
  * @property null|array<int, string>|string $middlewares
- * @property array|<string, <string, RequestParamDTO>> $request_param
- * @property array|<string, <string, RequestBodyDTO>> $request_body
+ * @property array<string, <string, RequestParamDTO>> $request_param
+ * @property array<string, <string, RequestBodyDTO>> $request_body
  * @property bool $request_body_required
  */
 class RouteConfigDTO extends BaseDTO
@@ -40,9 +41,9 @@ class RouteConfigDTO extends BaseDTO
      */
     public const MIDDLEWARE_NAMED_PREFIX = '@named:';
 
-    public function __construct(array $data = [])
+    public function initData()
     {
-        $data = array_merge([
+        $this->_data = array_merge([
             'desc' => '',
             'method' => '',
             'path' => '',
@@ -53,9 +54,7 @@ class RouteConfigDTO extends BaseDTO
             'request_param' => [],
             'request_body' => [],
             'request_body_required' => false,
-        ], $data);
-
-        parent::__construct($data);
+        ], $this->_data);
 
         foreach ($this->request_param as $in => $value) {
             foreach ($value as $name => $config) {
@@ -93,11 +92,11 @@ class RouteConfigDTO extends BaseDTO
             return [$this->formatMiddleware($this->middlewares)];
         }
         if (is_array($this->middlewares)) {
-            foreach ($this->middlewares as &$middleware) {
-                $middleware = $this->formatMiddleware($middleware);
+            $temp = [];
+            foreach ($this->middlewares as $middleware) {
+                $temp[] = $this->formatMiddleware($middleware);
             }
-            unset($middleware);
-            return $this->middlewares;
+            return $this->middlewares = $temp;
         }
 
         throw new InvalidArgumentException('Invalid middlewares type');

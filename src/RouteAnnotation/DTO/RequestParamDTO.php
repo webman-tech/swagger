@@ -2,6 +2,8 @@
 
 namespace WebmanTech\Swagger\RouteAnnotation\DTO;
 
+use WebmanTech\Swagger\DTO\BaseDTO;
+
 /**
  * @property string $desc
  * @property string|null $type
@@ -10,5 +12,4 @@ namespace WebmanTech\Swagger\RouteAnnotation\DTO;
  */
 class RequestParamDTO extends BaseDTO
 {
-
 }

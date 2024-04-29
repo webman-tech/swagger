@@ -13,6 +13,7 @@ use Webman\Http\Response;
 use WebmanTech\Swagger\DTO\ConfigOpenapiDocDTO;
 use WebmanTech\Swagger\DTO\ConfigSwaggerUiDTO;
 use WebmanTech\Swagger\Helper\JsExpression;
+use WebmanTech\Swagger\RouteAnnotation\Processors\CleanRouteX;
 
 class OpenapiController
 {
@@ -105,7 +106,14 @@ class OpenapiController
         }
 
         try {
-            return Generator::scan(Util::finder($scanPath, $scanExclude));
+            /**
+             * @see Generator::scan
+             */
+            return (new Generator())
+                ->setAliases(Generator::DEFAULT_ALIASES)
+                ->setNamespaces(Generator::DEFAULT_NAMESPACES)
+                ->addProcessor(new CleanRouteX()) // 清理路由注解
+                ->generate(Util::finder($scanPath, $scanExclude));
         } catch (Throwable $e) {
             if ($errorCount > count($requiredElements)) {
                 throw $e;

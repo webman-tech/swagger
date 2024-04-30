@@ -89,14 +89,14 @@ class RouteConfigDTO extends BaseDTO
             return null;
         }
         if (is_string($this->middlewares)) {
-            return [$this->formatMiddleware($this->middlewares)];
+            return array_filter([$this->formatMiddleware($this->middlewares)]);
         }
         if (is_array($this->middlewares)) {
             $temp = [];
             foreach ($this->middlewares as $middleware) {
                 $temp[] = $this->formatMiddleware($middleware);
             }
-            return $this->middlewares = $temp;
+            return array_filter($this->middlewares = $temp);
         }
 
         throw new InvalidArgumentException('Invalid middlewares type');

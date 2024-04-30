@@ -2,14 +2,12 @@
 
 namespace WebmanTech\Swagger\RouteAnnotation;
 
-use OpenApi\Analysers\AttributeAnnotationFactory;
-use OpenApi\Analysers\DocBlockAnnotationFactory;
-use OpenApi\Analysers\ReflectionAnalyser;
 use OpenApi\Analysis;
 use OpenApi\Annotations as OA;
 use OpenApi\Context;
 use OpenApi\Generator;
 use Symfony\Component\Finder\Finder;
+use WebmanTech\Swagger\RouteAnnotation\Analysers\ReflectionAnalyser;
 use WebmanTech\Swagger\RouteAnnotation\DTO\RequestBodyDTO;
 use WebmanTech\Swagger\RouteAnnotation\DTO\RequestParamDTO;
 use WebmanTech\Swagger\RouteAnnotation\DTO\RouteConfigDTO;
@@ -23,9 +21,7 @@ class Reader
     public function __construct()
     {
         $this->context = new Context();
-        $this->analyser = new ReflectionAnalyser([
-            new DocBlockAnnotationFactory(), new AttributeAnnotationFactory()
-        ]);
+        $this->analyser = new ReflectionAnalyser();
         $this->generator = new Generator();
     }
 
@@ -46,15 +42,17 @@ class Reader
         $openapi = $analysis->openapi;
 
         $data = [];
-        foreach ($openapi->paths as $path) {
-            foreach (['get', 'post', 'put', 'patch', 'delete'] as $method) {
-                if (Generator::isDefault($path->{$method})) {
-                    continue;
+        if (!Generator::isDefault($openapi->paths)) {
+            foreach ($openapi->paths as $path) {
+                foreach (['get', 'post', 'put', 'patch', 'delete'] as $method) {
+                    if (Generator::isDefault($path->{$method})) {
+                        continue;
+                    }
+                    /** @var OA\Operation $operation */
+                    $operation = $path->{$method};
+                    $routeConfig = $this->parseCommon($operation);
+                    $data[$routeConfig->method . ':' . $routeConfig->path] = $routeConfig;
                 }
-                /** @var OA\Operation $operation */
-                $operation = $path->{$method};
-                $routeConfig = $this->parseCommon($operation);
-                $data[$routeConfig->method . ':' . $routeConfig->path] = $routeConfig;
             }
         }
 
@@ -63,15 +61,19 @@ class Reader
 
     private function formatPath($pathOrFile)
     {
-        if (is_dir($pathOrFile)) {
-            return Finder::create()->files()->in($pathOrFile)->name('*.php');
+        if (is_string($pathOrFile)) {
+            if (is_file($pathOrFile)) {
+                return [
+                    new \SplFileInfo($pathOrFile)
+                ];
+            }
+            if (!is_dir($pathOrFile)) {
+                throw new \InvalidArgumentException(sprintf('"%s" is not a valid path or file', $pathOrFile));
+            }
+            $pathOrFile = [$pathOrFile];
         }
-        if (is_file($pathOrFile)) {
-            return [
-                new \SplFileInfo($pathOrFile)
-            ];
-        }
-        throw new \InvalidArgumentException(sprintf('"%s" is not a valid path or file', $pathOrFile));
+
+        return Finder::create()->files()->in($pathOrFile)->name('*.php');
     }
 
     private function parseCommon(OA\Operation $operation): RouteConfigDTO

@@ -2,7 +2,6 @@
 
 namespace WebmanTech\Swagger\Controller;
 
-use Closure;
 use Doctrine\Common\Annotations\Annotation;
 use OpenApi\Annotations as OA;
 use OpenApi\Generator;
@@ -13,6 +12,7 @@ use Webman\Http\Response;
 use WebmanTech\Swagger\DTO\ConfigOpenapiDocDTO;
 use WebmanTech\Swagger\DTO\ConfigSwaggerUiDTO;
 use WebmanTech\Swagger\Helper\JsExpression;
+use WebmanTech\Swagger\RouteAnnotation\Analysers\ReflectionAnalyser;
 use WebmanTech\Swagger\RouteAnnotation\Processors\CleanRouteX;
 
 class OpenapiController
@@ -112,6 +112,7 @@ class OpenapiController
             return (new Generator())
                 ->setAliases(Generator::DEFAULT_ALIASES)
                 ->setNamespaces(Generator::DEFAULT_NAMESPACES)
+                ->setAnalyser(new ReflectionAnalyser())
                 ->addProcessor(new CleanRouteX()) // 清理路由注解
                 ->generate(Util::finder($scanPath, $scanExclude));
         } catch (Throwable $e) {

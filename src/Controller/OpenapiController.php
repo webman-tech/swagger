@@ -2,7 +2,6 @@
 
 namespace WebmanTech\Swagger\Controller;
 
-use Closure;
 use Doctrine\Common\Annotations\Annotation;
 use OpenApi\Annotations as OA;
 use OpenApi\Generator;
@@ -10,8 +9,11 @@ use OpenApi\Util;
 use Symfony\Component\Finder\Finder;
 use Throwable;
 use Webman\Http\Response;
-use WebmanTech\Swagger\Helper\ArrayHelper;
+use WebmanTech\Swagger\DTO\ConfigOpenapiDocDTO;
+use WebmanTech\Swagger\DTO\ConfigSwaggerUiDTO;
 use WebmanTech\Swagger\Helper\JsExpression;
+use WebmanTech\Swagger\RouteAnnotation\Analysers\ReflectionAnalyser;
+use WebmanTech\Swagger\RouteAnnotation\Processors\CleanRouteX;
 
 class OpenapiController
 {
@@ -34,74 +36,44 @@ class OpenapiController
         ];
     }
 
-    public function swaggerUI(string $docRoute, array $config = []): Response
+    /**
+     * @param string $docRoute
+     * @param array|ConfigOpenapiDocDTO $config
+     * @return Response
+     * @throws Throwable
+     */
+    public function swaggerUI(string $docRoute, $config = []): Response
     {
-        $config = ArrayHelper::merge(
-            [
-                'view' => 'swagger-ui',
-                'view_path' => '../vendor/webman-tech/swagger/src', // 相对 app_path() 的路径
-                'data' => [
-                    // @link https://github.com/swagger-api/swagger-ui/blob/master/dist/swagger-initializer.js
-                    'css' => [
-                        'https://unpkg.com/swagger-ui-dist/swagger-ui.css',
-                        //'https://unpkg.com/swagger-ui-dist/index.css',
-                    ],
-                    'js' => [
-                        'https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js',
-                        //'https://unpkg.com/swagger-ui-dist/swagger-ui-standalone-preset.js',
-                    ],
-                    'title' => config('app.name', 'swagger') . ' - openapi',
-                    'ui_config' => [
-                        // @link https://swagger.io/docs/open-source-tools/swagger-ui/usage/configuration/
-                        'dom_id' => '#swagger-ui',
-                        'persistAuthorization' => true,
-                        'deepLinking' => true,
-                        'filter' => '',
-                        /*'presets' => [
-                            new JsExpression('SwaggerUIBundle.presets.apis'),
-                            new JsExpression('SwaggerUIStandalonePreset'),
-                        ],
-                        'plugins' => [
-                            new JsExpression('SwaggerUIBundle.plugins.DownloadUrl'),
-                        ],
-                        'layout' => 'StandaloneLayout',*/
-                    ],
-                ],
-            ],
-            config('plugin.webman-tech.swagger.app.swagger_ui', []),
-            $config
-        );
-        $config['data']['ui_config']['url'] = new JsExpression("window.location.pathname + '/{$docRoute}'");
+        if (!$config instanceof ConfigSwaggerUiDTO) {
+            $config = new ConfigSwaggerUiDTO($config);
+        }
 
-        return raw_view($config['view'], $config['data'], $config['view_path']);
+        $tempData = $config->data;
+        $tempData['ui_config']['url'] = new JsExpression("window.location.pathname + '/{$docRoute}'");
+        $config->data = $tempData;
+
+        return raw_view($config->view, $config->data, $config->view_path);
     }
 
     private static $docCache = [];
 
-    public function openapiDoc(array $config = []): Response
+    /**
+     * @param array|ConfigOpenapiDocDTO $config
+     * @return Response
+     * @throws Throwable
+     */
+    public function openapiDoc($config = []): Response
     {
-        $config = ArrayHelper::merge(
-            [
-                'scan_path' => [], // 扫描的目录
-                'scan_exclude' => null, // 扫描忽略的
-                'modify' => null, // 修改 $openapi 对象
-                'cache_key' => null, // 如何缓存
-            ],
-            config('plugin.webman-tech.swagger.app.openapi_doc', []),
-            $config
-        );
-
-        if (is_callable($config['cache_key'])) {
-            $config['cache_key'] = $config['cache_key']();
+        if (!$config instanceof ConfigOpenapiDocDTO) {
+            $config = new ConfigOpenapiDocDTO($config);
         }
-        $cacheKey = $config['cache_key'] ?: __CLASS__;
+
+        $cacheKey = $config->getCacheKey();
 
         if (!isset(static::$docCache[$cacheKey])) {
-            $openapi = $this->scanAndGenerateOpenapi($config['scan_path'], $config['scan_exclude']);
+            $openapi = $this->scanAndGenerateOpenapi($config->scan_path, $config->scan_exclude);
 
-            if ($config['modify'] instanceof Closure) {
-                $config['modify']($openapi);
-            }
+            $config->applyModify($openapi);
 
             $yaml = $openapi->toYaml();
 
@@ -134,7 +106,15 @@ class OpenapiController
         }
 
         try {
-            return Generator::scan(Util::finder($scanPath, $scanExclude));
+            /**
+             * @see Generator::scan
+             */
+            return (new Generator())
+                ->setAliases(Generator::DEFAULT_ALIASES)
+                ->setNamespaces(Generator::DEFAULT_NAMESPACES)
+                ->setAnalyser(new ReflectionAnalyser())
+                ->addProcessor(new CleanRouteX()) // 清理路由注解
+                ->generate(Util::finder($scanPath, $scanExclude));
         } catch (Throwable $e) {
             if ($errorCount > count($requiredElements)) {
                 throw $e;

@@ -10,12 +10,13 @@ composer require webman-tech/swagger
 
 ## 特点
 
-- 基于 [zircote/swagger-php](https://github.com/zircote/swagger-php)
-- 支持零配置启动
+- 基于 [zircote/swagger-php](https://github.com/zircote/swagger-php)（同时支持 Annotation 和 Attribute 模式）
+- 支持零配置启动（安装后直接访问 /openapi 即可看到 swagger UI 的界面）
 - 支持单应用下多个 swagger 文档（多路由，不同 api 文档）
 - 支持动态修改注解下的 swagger 文档（解决注解下无法写动态配置的问题）
 - 支持丰富的配置（host 访问限制 / swagger-ui 配置 / openapi 配置）
 - 性能优先（服务启动后缓存，开发环境支持自动更新）
+- 支持自动注册 webman 路由（已经写了 openapi 文档，再写一遍 webman Route 是不是多此一举？）
 
 ## 使用
 
@@ -124,3 +125,12 @@ Route::group('/api2', function () {
 `app.php` 中的配置是全局的
 
 `(new Swagger())->registerRoute($config)` 中的传参 `$config` 是应用级别的
+
+## webman 路由自动注册
+
+在 config 的 `app.php` 中修改 `register_webman_route` 为 true 即可自动注册 webman 路由
+
+
+## 参考
+
+[webman 使用 swagger 示例，注解的 crud](https://github.com/webman-tech/webman-samples/tree/swagger-attributions)

@@ -133,4 +133,6 @@ Route::group('/api2', function () {
 
 ## 参考
 
-[webman 使用 swagger 示例，注解的 crud](https://github.com/webman-tech/webman-samples/tree/swagger-attributions)
+[webman 使用 swagger 示例：注解模式的 crud](https://github.com/webman-tech/webman-samples/tree/swagger-attributions)
+
+[webman 使用 swagger 示例：多 swagger 文档](https://github.com/webman-tech/webman-samples/tree/swagger-multi)

@@ -14,9 +14,6 @@ use WebmanTech\Swagger\DTO\BaseDTO;
  * @property string $action
  * @property null|string $name
  * @property null|array<int, string>|string $middlewares
- * @property array<string, <string, RequestParamDTO>> $request_param
- * @property array<string, <string, RequestBodyDTO>> $request_body
- * @property bool $request_body_required
  */
 class RouteConfigDTO extends BaseDTO
 {
@@ -51,32 +48,7 @@ class RouteConfigDTO extends BaseDTO
             'action' => '',
             'name' => null,
             'middlewares' => null,
-            'request_param' => [],
-            'request_body' => [],
-            'request_body_required' => false,
         ], $this->_data);
-
-        foreach ($this->request_param as $in => $value) {
-            foreach ($value as $name => $config) {
-                if (is_array($config)) {
-                    $tempValue = $this->request_param;
-                    $tempValue[$in][$name] = new RequestParamDTO($config);
-                    $this->request_param = $tempValue;
-                }
-            }
-        }
-
-        foreach ($this->request_body as $mediaType => $value) {
-            foreach ($value as $name => $config) {
-                if (is_array($config)) {
-                    $tempValue = $this->request_body;
-                    $tempValue[$mediaType][$name] = new RequestBodyDTO($config);
-                    $this->request_body = $tempValue;
-                }
-            }
-            unset($v);
-        }
-        unset($value);
     }
 
     /**

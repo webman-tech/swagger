@@ -37,7 +37,7 @@ class ConfigOpenapiDocDTO extends BaseDTO
             $cacheKey = call_user_func($this->cache_key);
         }
 
-        return $cacheKey ?? __CLASS__;
+        return $cacheKey ?? md5(serialize($this->scan_path));
     }
 
     public function applyModify(OpenApi $openapi)

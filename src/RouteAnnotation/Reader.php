@@ -15,6 +15,16 @@ class Reader
     private $context;
     private $analyser;
     private $generator;
+    private $pathItemOperationAttributes = [
+        'get',
+        'post',
+        'put',
+        'delete',
+        'patch',
+        //'trace', // webman 暂不支持
+        'head',
+        'options',
+    ];
 
     public function __construct()
     {
@@ -36,18 +46,19 @@ class Reader
         }
 
         $analysis->process($this->generator->getProcessors());
-
         $openapi = $analysis->openapi;
 
         $data = [];
         if (!Generator::isDefault($openapi->paths)) {
             foreach ($openapi->paths as $path) {
-                foreach (['get', 'put', 'post', 'patch', 'delete'] as $method) {
-                    if (Generator::isDefault($path->{$method})) {
+                foreach ($this->pathItemOperationAttributes as $attr) {
+                    $operation = $path->{$attr};
+                    if (Generator::isDefault($operation)) {
                         continue;
                     }
-                    /** @var OA\Operation $operation */
-                    $operation = $path->{$method};
+                    if (!$operation instanceof OA\Operation) {
+                        throw new \InvalidArgumentException(sprintf('"%s" is not an Operation', $attr));
+                    }
                     $routeConfig = $this->parseRouteConfig($operation);
                     $data[$routeConfig->method . ':' . $routeConfig->path] = $routeConfig;
                 }

@@ -8,15 +8,25 @@
       "WebmanTech\\Swagger\\": "src"
     }
   },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests"
+    }
+  },
   "require": {
     "php": ">=7.2",
     "ext-json": "*",
     "zircote/swagger-php": "^4.7"
   },
   "require-dev": {
+    "illuminate/validation": ">=5.4",
+    "pestphp/pest": "^1.23",
     "workerman/webman-framework": "^1.5"
   },
   "config": {
-    "sort-packages": true
+    "sort-packages": true,
+    "allow-plugins": {
+      "pestphp/pest-plugin": true
+    }
   }
 }

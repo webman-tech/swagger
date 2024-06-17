@@ -2,80 +2,88 @@
 
 namespace WebmanTech\Swagger\SchemaAnnotation;
 
-use support\Container;
+use Illuminate\Contracts\Validation\Factory as ValidatorFactory;
+use Illuminate\Validation\ValidationException;
+use WebmanTech\Swagger\SchemaAnnotation\DTO\ClassInfoDTO;
 
-class BaseSchema
+abstract class BaseSchema
 {
-    private Getter $annotationGetter;
-    private Validator $validator;
+    private ClassInfoDTO $classInfo;
 
     final public function __construct()
     {
-        /** @var Reader $reader */
-        $reader = Container::get(Reader::class);
-        $this->annotationGetter = $reader->read(static::class);
-        $this->validator = new SchemaValidator($this, $this->annotationGetter);
+        $this->classInfo = ReflectionClassReader::read(static::class);
+    }
+
+    protected function validationExtraRules(): array
+    {
+        return [];
+    }
+
+    protected function validationMessages(): array
+    {
+        return [];
+    }
+
+    protected function validationCustomAttributes(): array
+    {
+        return [];
     }
 
     /**
-     * @var array<string, array{0: string, 1: string}|\TypeError>
-     */
-    private array $typeErrors = [];
-
-    /**
-     * 给属性赋值
+     * 装载数据
      * @param array $data
+     * @param null|ValidatorFactory $validator 提供验证器后会先执行验证
      * @return $this
+     * @throws ValidationException
      */
-    public function load(array $data): static
+    public function load(array $data, $validator = null): static
     {
-        // 仅 load 定义了的属性
-        $properties = $this->annotationGetter->getProperties();
-        foreach ($data as $key => $value) {
-            // 非定义属性跳过
-            if (!array_key_exists($key, $properties)) {
+        if ($validator instanceof ValidatorFactory) {
+            $validator = $validator->make(
+                $data,
+                $this->classInfo->getLaravelValidationRules($this->validationExtraRules()),
+                $this->validationMessages(),
+                $this->validationCustomAttributes(),
+            );
+            $data = $validator->validated();
+        }
+
+        foreach ($data as $property => $value) {
+            // 属性不存在，跳过
+            if (!$this->classInfo->isPropertyExist($property)) {
                 continue;
             }
             // 如果是 object 类型的
-            if ($class = $this->annotationGetter->getPropertyObjectRef($key)) {
-                $value = (new $class)->load($value);
+            if ($schemaClass = $this->classInfo->getPropertyObjectSchemaType($property)) {
+                $value = (new $schemaClass)->load($value, $validator);
             }
-            // 如果是 array 嵌套形式的，且定义了嵌套的 items 类型的
-            if ($class = $this->annotationGetter->getPropertyItemsRef($key)) {
-                $value = array_map(fn ($item) => (new $class)->load($item), $value);
+            // 如果是 array 嵌套形式的
+            if ($schemaClass = $this->classInfo->getPropertyArrayItemSchemaType($property)) {
+                $value = array_map(fn($item) => (new $schemaClass)->load($item, $validator), $value);
             }
             // 属性赋值
             try {
-                $this->$key = $value;
+                $this->$property = $value;
             } catch (\TypeError $e) {
-                $this->validator->addTypeError($key, $e);
+                // 类型错误忽略
             }
         }
-        return $this;
-    }
 
-    /**
-     * 根据定义校验属性值
-     * @param array $config
-     * @return array
-     */
-    public function validate(array $config = []): array
-    {
-        $this->validator->validate($config);
-        return $this->validator->getErrors();
+        return $this;
     }
 
     public function toArray(): array
     {
         $result = [];
-        foreach ($this->annotationGetter->getProperties() as $propertyName => $property) {
-            $value = $this->$propertyName;
+        foreach ($this->classInfo->getPropertyNames() as $property) {
+            $value = $this->$property;
             if (is_array($value)) {
-                $value = array_map(fn ($item) => $item instanceof self ? $item->toArray() : $item, $value);
+                $value = array_map(fn($item) => $item instanceof self ? $item->toArray() : $item, $value);
             } else if ($value instanceof self) {
                 $value = $value->toArray();
             }
-            $result[$propertyName] = $value;
+            $result[$property] = $value;
         }
         return $result;
     }

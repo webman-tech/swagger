@@ -8,6 +8,11 @@
       "WebmanTech\\Swagger\\": "src"
     }
   },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests"
+    }
+  },
   "require": {
     "php": ">=7.2",
     "ext-json": "*",

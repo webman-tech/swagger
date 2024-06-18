@@ -130,6 +130,53 @@ Route::group('/api2', function () {
 
 在 config 的 `app.php` 中修改 `register_webman_route` 为 true 即可自动注册 webman 路由
 
+## 路由传参与 swagger 文档绑定，并且支持自动校验（仅支持 php>=8.1）
+
+建立一个 Schema
+
+```php
+<?php
+
+use OpenApi\Attributes as OA;
+
+#[OA\Schema(required: ['name', 'age'])]
+class TestSchema {
+    #[OA\Property(description: '名称', example: 'webman')]
+    public string $name = '';
+    #[OA\Property(description: '年龄', example: 5)]
+    public int $age = 0;
+    #[OA\Property(description: '备注', example: 'xxx')]
+    public string $remark = '';
+}
+```
+
+控制器
+
+```php
+
+class IndexController {
+     #[OA\Post(
+        path: '/xxx',
+        summary: '接口说明',
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: [
+                new OA\JsonContent(
+                    ref: TestSchema::class,
+                ),
+            ],
+        ),
+    )]
+    #[OA\Response(response: 200, description: 'null')]
+    public function md(Request $request) {
+        $schema = TestSchema::create($request->post(), validator()); // 自动装载加自动校验
+        
+        // do something
+        
+        return response();
+    }
+}
+```
 
 ## 参考
 

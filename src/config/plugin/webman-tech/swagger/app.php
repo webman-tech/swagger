@@ -33,10 +33,4 @@ return [
      */
     'openapi_doc' => [
     ],
-    /**
-     *
-     */
-    'schema_validator' => [
-
-    ],
 ];

@@ -32,6 +32,5 @@ return [
      * @see \WebmanTech\Swagger\DTO\ConfigOpenapiDocDTO
      */
     'openapi_doc' => [
-
     ],
 ];

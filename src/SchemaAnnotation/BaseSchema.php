@@ -90,6 +90,11 @@ abstract class BaseSchema implements \JsonSerializable
         return $result;
     }
 
+    public function __toString(): string
+    {
+        return json_encode($this);
+    }
+
     /**
      * @inheritDoc
      * @return mixed

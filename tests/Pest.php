@@ -11,6 +11,8 @@
 |
 */
 
+require __DIR__ . '/bootstrap.php';
+
 // uses(Tests\TestCase::class)->in('Feature');
 
 /*
@@ -43,7 +45,12 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function getValidator()
+function get_path(string $path = ''): string
+{
+    return __DIR__ . $path;
+}
+
+function get_validator(): Factory
 {
     return new Factory(
         new Translator(

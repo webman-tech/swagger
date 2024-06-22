@@ -16,11 +16,11 @@
   "require": {
     "php": ">=7.2",
     "ext-json": "*",
-    "zircote/swagger-php": "^4.7"
+    "zircote/swagger-php": "^4.8"
   },
   "require-dev": {
     "illuminate/validation": ">=5.4",
-    "pestphp/pest": "^1.23",
+    "pestphp/pest": "^1.23||^2.34",
     "workerman/webman-framework": "^1.5"
   },
   "config": {

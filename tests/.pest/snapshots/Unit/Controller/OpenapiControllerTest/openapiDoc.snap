@@ -1,0 +1,177 @@
+openapi: 3.0.0
+info:
+  title: 'App OpenAPI'
+  version: '0.1'
+paths:
+  /crud:
+    get:
+      tags:
+        - crud
+      summary: 列表
+      operationId: b531b661963dee0493f6afced37b7fdf
+      parameters:
+        -
+          name: page
+          in: query
+          description: 页数
+          schema:
+            type: integer
+        -
+          name: page_size
+          in: query
+          description: 每页数量
+          schema:
+            type: integer
+        -
+          name: username
+          in: query
+          description: 用户名
+          schema:
+            type: string
+        -
+          name: status
+          in: query
+          description: 状态
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 列表数据
+      security:
+        -
+          api_key: []
+    post:
+      tags:
+        - crud
+      summary: 新建
+      operationId: 556ad2e04733f821b2fa702bb6a3a7db
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              required:
+                - username
+                - password
+                - name
+              properties:
+                username:
+                  description: 用户名
+                  type: string
+                  maxLength: 64
+                  example: admin
+                password:
+                  description: 密码
+                  type: string
+                  maxLength: 64
+                  example: '123456'
+                name:
+                  description: 名称
+                  type: string
+                  example: 测试用户
+              type: object
+      responses:
+        '200':
+          description: 新建后的明细
+      security:
+        -
+          api_key: []
+  '/crud/{id}':
+    get:
+      tags:
+        - crud
+      summary: 详情
+      operationId: a41935670be81d1c4477197244ceaade
+      parameters:
+        -
+          name: id
+          in: path
+          description: ID
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 明细
+      security:
+        -
+          api_key: []
+    put:
+      tags:
+        - crud
+      summary: 更新
+      operationId: 92bda1406db46f7339c3750891dc25a3
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                username:
+                  description: 用户名
+                  type: string
+                  maxLength: 64
+                  example: admin
+                password:
+                  description: 密码
+                  type: string
+                  maxLength: 64
+                  example: '123456'
+                name:
+                  description: 名称
+                  type: string
+                  example: 测试用户
+                status:
+                  description: 状态
+                  type: integer
+                  example: 0
+              type: object
+      responses:
+        '200':
+          description: 更新后的明细
+      security:
+        -
+          api_key: []
+    delete:
+      tags:
+        - crud
+      summary: 删除
+      operationId: fc1e1f75cc7eb82d864dd9b6ac8c44dc
+      parameters:
+        -
+          name: id
+          in: path
+          description: ID
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 无返回数据
+      security:
+        -
+          api_key: []
+  '/crud/{id}/recovery':
+    put:
+      tags:
+        - crud
+      summary: 恢复
+      operationId: 9a04a98d48cf8ebf2c260926e4a6d5e0
+      parameters:
+        -
+          name: id
+          in: path
+          description: ID
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 明细
+      security:
+        -
+          api_key: []
+tags:
+  -
+    name: crud
+    description: 'crud 例子'

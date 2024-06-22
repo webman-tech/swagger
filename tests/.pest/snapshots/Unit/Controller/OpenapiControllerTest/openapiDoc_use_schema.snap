@@ -1,0 +1,118 @@
+openapi: 3.0.0
+info:
+  title: 'App OpenAPI'
+  version: '0.1'
+paths:
+  /crud:
+    post:
+      tags:
+        - crud
+      summary: 新建
+      operationId: 5bf599282fcc7b5b1a4682b0d7cb5902
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExampleCreateSchema'
+      responses:
+        '200':
+          description: 新建后的明细
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExampleSchema'
+      security:
+        -
+          api_key: []
+  '/crud/{id}':
+    put:
+      tags:
+        - crud
+      summary: 更新
+      operationId: 5162eb1e8424e206d382b71bc60bce82
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExampleUpdateSchema'
+      responses:
+        '200':
+          description: 更新后的明细
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExampleSchema'
+      security:
+        -
+          api_key: []
+components:
+  schemas:
+    ExampleSchema:
+      properties:
+        username:
+          description: 用户名
+          type: string
+          example: admin
+        password:
+          description: 密码
+          type: string
+          example: '123456'
+        name:
+          description: 名称
+          type: string
+          example: 测试用户
+        status:
+          description: 状态
+          type: integer
+          example: 0
+      type: object
+    ExampleCreateSchema:
+      required:
+        - username
+        - password
+        - name
+      properties:
+        username:
+          description: 用户名
+          type: string
+          maxLength: 64
+          example: admin
+        password:
+          description: 密码
+          type: string
+          maxLength: 64
+          example: '123456'
+        name:
+          description: 名称
+          type: string
+          maxLength: 64
+          example: 测试用户
+      type: object
+    ExampleUpdateSchema:
+      properties:
+        username:
+          description: 用户名
+          type: string
+          maxLength: 64
+          example: admin
+        password:
+          description: 密码
+          type: string
+          maxLength: 64
+          example: '123456'
+        name:
+          description: 名称
+          type: string
+          maxLength: 64
+          example: 测试用户
+        status:
+          description: 状态
+          type: integer
+          example: 0
+      type: object
+tags:
+  -
+    name: crud
+    description: 'crud 例子'

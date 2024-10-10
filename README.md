@@ -138,9 +138,10 @@ Route::group('/api2', function () {
 <?php
 
 use OpenApi\Attributes as OA;
+use WebmanTech\Swagger\SchemaAnnotation\BaseSchema;
 
 #[OA\Schema(required: ['name', 'age'])]
-class TestSchema {
+class TestSchema extends BaseSchema {
     #[OA\Property(description: '名称', example: 'webman')]
     public string $name = '';
     #[OA\Property(description: '年龄', example: 5)]

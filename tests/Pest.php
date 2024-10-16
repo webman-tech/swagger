@@ -59,3 +59,8 @@ function get_validator(): Factory
         )
     );
 }
+
+function skipByPestV1(): array
+{
+    return [version_compare(\Pest\version(), '2.0.0', '<'), 'skip by pest v1'];
+}

@@ -10,7 +10,7 @@ test('openapiDoc', function () {
 
     expect($response->rawBody())->toMatchSnapshot()
         ->and($response->getHeader('Content-Type'))->toBe('application/x-yaml');
-});
+})->skip(...skipByPestV1());
 
 test('openapiDoc use schema', function () {
     $controller = new OpenapiController();
@@ -20,4 +20,4 @@ test('openapiDoc use schema', function () {
 
     expect($response->rawBody())->toMatchSnapshot()
         ->and($response->getHeader('Content-Type'))->toBe('application/x-yaml');
-});
+})->skip(...skipByPestV1());

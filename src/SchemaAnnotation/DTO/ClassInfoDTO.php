@@ -2,6 +2,8 @@
 
 namespace WebmanTech\Swagger\SchemaAnnotation\DTO;
 
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use WebmanTech\Swagger\DTO\BaseDTO;
 use WebmanTech\Swagger\SchemaAnnotation\BaseSchema;
 use WebmanTech\Swagger\SchemaAnnotation\ReflectionClassReader;
@@ -99,7 +101,16 @@ class ClassInfoDTO extends BaseDTO
                 if (is_string($extraRules)) {
                     $extraRules = explode('|', $extraRules);
                 }
-                $rules[$property] = array_values(array_unique(array_merge($rules[$property], $extraRules)));
+                $rules[$property] = collect($rules[$property])
+                    ->merge($extraRules)
+                    ->unique(function ($value) {
+                        if (!is_string($value)) {
+                            return Str::random(); // 非 string 类型的无法去重
+                        }
+                        return $value;
+                    })
+                    ->values()
+                    ->toArray();
             }
         }
 

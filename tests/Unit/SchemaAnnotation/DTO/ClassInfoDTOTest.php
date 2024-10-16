@@ -163,12 +163,14 @@ test('getLaravelValidationRules', function () {
 });
 
 test('getLaravelValidationRules with extra', function () {
+    $callable = function () {};
     expect($this->classInfoSimple->getLaravelValidationRules([
+        'string' => $callable, // callback 形式
         'string2' => 'required|size:10', // string 形式
         'bool2' => ['required', 'min:0'], // 数组形式
         'bool' => 'required', // 重复，去重
     ]))->toBe([
-        'string' => ['required', 'string'],
+        'string' => ['required', 'string', $callable],
         'string2' => ['string', 'required', 'size:10'],
         'bool' => ['required', 'boolean'],
         'bool2' => ['boolean', 'required', 'min:0'],

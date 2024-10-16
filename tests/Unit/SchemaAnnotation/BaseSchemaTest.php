@@ -50,9 +50,8 @@ test('load no validate, no params', function () {
 });
 
 test('load with validate', function () {
-    expect(function() {
-        return SchemaExampleSimple::create([], get_validator());
-    })->toThrow(ValidationException::class);
+    expect(fn() => SchemaExampleSimple::create([], get_validator()))
+        ->toThrow(ValidationException::class);
 });
 
 test('validate union(不支持)', function () {

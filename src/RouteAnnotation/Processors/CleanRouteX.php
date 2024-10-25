@@ -17,13 +17,14 @@ class CleanRouteX implements ProcessorInterface
 
         foreach ($operations as $operation) {
             if (!Generator::isDefault($operation->x)) {
-                $x = $operation->x;
                 unset(
-                    $x[SchemaConstants::X_NAME],
-                    $x[SchemaConstants::X_PATH],
-                    $x[SchemaConstants::X_MIDDLEWARE],
+                    $operation->x[SchemaConstants::X_NAME],
+                    $operation->x[SchemaConstants::X_PATH],
+                    $operation->x[SchemaConstants::X_MIDDLEWARE],
                 );
-                $operation->x = $x;
+                if (!$operation->x) {
+                    $operation->x = Generator::UNDEFINED;
+                }
             }
         }
     }

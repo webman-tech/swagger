@@ -4,6 +4,66 @@ info:
   version: '0.1'
 paths:
   /crud:
+    get:
+      tags:
+        - crud
+      summary: 列表
+      operationId: 14ebc729691558bc8e0450a8329e5aba
+      parameters:
+        -
+          name: page
+          in: query
+          description: 页数
+          schema:
+            type: integer
+        -
+          name: page_size
+          in: query
+          description: 每页数量
+          schema:
+            type: integer
+        -
+          name: username
+          in: query
+          description: 用户名
+          required: true
+          schema:
+            type: string
+            nullable: false
+          example: admin
+        -
+          name: password
+          in: query
+          description: 密码
+          required: true
+          schema:
+            type: string
+            nullable: false
+          example: '123456'
+        -
+          name: name
+          in: query
+          description: 名称
+          required: true
+          schema:
+            type: string
+            nullable: false
+          example: 测试用户
+        -
+          name: status
+          in: query
+          description: 状态
+          required: true
+          schema:
+            type: integer
+            nullable: false
+          example: 0
+      responses:
+        '200':
+          description: 列表数据
+      security:
+        -
+          api_key: []
     post:
       tags:
         - crud

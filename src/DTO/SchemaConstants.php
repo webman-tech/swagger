@@ -22,6 +22,10 @@ class SchemaConstants
      * @see self::getRouteMiddlewares()
      */
     public const X_MIDDLEWARE = 'route-middleware';
+    /**
+     * schema 转 parameters
+     */
+    public const X_SCHEMA_TO_PARAMETERS = 'schema-to-parameters';
 
     /**
      * 命名路由的前缀

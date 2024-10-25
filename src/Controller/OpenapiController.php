@@ -5,6 +5,7 @@ namespace WebmanTech\Swagger\Controller;
 use Doctrine\Common\Annotations\Annotation;
 use OpenApi\Annotations as OA;
 use OpenApi\Generator;
+use OpenApi\Pipeline;
 use OpenApi\Util;
 use Symfony\Component\Finder\Finder;
 use Throwable;
@@ -14,6 +15,7 @@ use WebmanTech\Swagger\DTO\ConfigSwaggerUiDTO;
 use WebmanTech\Swagger\Helper\JsExpression;
 use WebmanTech\Swagger\RouteAnnotation\Analysers\ReflectionAnalyser;
 use WebmanTech\Swagger\RouteAnnotation\Processors\CleanRouteX;
+use WebmanTech\Swagger\RouteAnnotation\Processors\SchemaQueryParameter;
 
 class OpenapiController
 {
@@ -113,6 +115,7 @@ class OpenapiController
                 ->setAliases(Generator::DEFAULT_ALIASES)
                 ->setNamespaces(Generator::DEFAULT_NAMESPACES)
                 ->setAnalyser(new ReflectionAnalyser())
+                ->addProcessor(new SchemaQueryParameter()) // 支持批量 query 参数配置
                 ->addProcessor(new CleanRouteX()) // 清理路由注解
                 ->generate(Util::finder($scanPath, $scanExclude));
         } catch (Throwable $e) {

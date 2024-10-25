@@ -132,7 +132,7 @@ Route::group('/api2', function () {
 
 ## 路由传参与 swagger 文档绑定，并且支持自动校验（仅支持 php>=8.1）
 
-建立一个 Schema
+建立一个 Schema（可同时用于 POST 和 GET）
 
 ```php
 <?php
@@ -155,6 +155,9 @@ class TestSchema extends BaseSchema {
 
 ```php
 
+use OpenApi\Attributes as OA;
+use WebmanTech\Swagger\DTO\SchemaConstants;
+
 class IndexController {
      #[OA\Post(
         path: '/xxx',
@@ -163,7 +166,7 @@ class IndexController {
             required: true,
             content: [
                 new OA\JsonContent(
-                    ref: TestSchema::class,
+                    ref: TestSchema::class, // 简化 Body 的定义
                 ),
             ],
         ),
@@ -171,6 +174,22 @@ class IndexController {
     #[OA\Response(response: 200, description: 'null')]
     public function md(Request $request) {
         $schema = TestSchema::create($request->post(), validator()); // 自动装载加自动校验
+        
+        // do something
+        
+        return response();
+    }
+    
+    #[OA\Get(
+        path: '/xxx',
+        summary: '接口说明',
+        x: [
+            SchemaConstants::X_SCHEMA_TO_PARAMETERS => TestSchema::class, // 该定义会自动将 Schema 转为 QueryParameters
+        ],
+    )]
+    #[OA\Response(response: 200, description: 'null')]
+    public function md(Request $request) {
+        $schema = TestSchema::create($request->get(), validator()); // 自动装载加自动校验
         
         // do something
         

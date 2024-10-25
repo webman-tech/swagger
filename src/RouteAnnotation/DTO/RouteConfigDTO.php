@@ -5,6 +5,7 @@ namespace WebmanTech\Swagger\RouteAnnotation\DTO;
 use InvalidArgumentException;
 use support\Container;
 use WebmanTech\Swagger\DTO\BaseDTO;
+use WebmanTech\Swagger\DTO\SchemaConstants;
 
 /**
  * @property string $desc
@@ -18,25 +19,22 @@ use WebmanTech\Swagger\DTO\BaseDTO;
 class RouteConfigDTO extends BaseDTO
 {
     /**
-     * 命名路由
+     * @deprecated
      */
-    public const X_NAME = 'route-name';
+    public const X_NAME = SchemaConstants::X_NAME;
     /**
-     * 路由 path
-     * 当 openapi 上的 path 不能满足时路由定义时使用
-     * 比如 /user/{id:\d+} 或 /user[/{name}]，可以通过此设置
+     * @deprecated
      */
-    public const X_PATH = 'route-path';
+    public const X_PATH = SchemaConstants::X_PATH;
     /**
-     * 路由中间件
-     * @see self::getRouteMiddlewares()
+     * @deprecated
      */
-    public const X_MIDDLEWARE = 'route-middleware';
+    public const X_MIDDLEWARE = SchemaConstants::X_MIDDLEWARE;
 
     /**
-     * 命名路由的前缀
+     * @deprecated
      */
-    public const MIDDLEWARE_NAMED_PREFIX = '@named:';
+    public const MIDDLEWARE_NAMED_PREFIX = SchemaConstants::MIDDLEWARE_NAMED_PREFIX;
 
     public function initData()
     {
@@ -77,8 +75,8 @@ class RouteConfigDTO extends BaseDTO
     private function formatMiddleware($middleware)
     {
         if (is_string($middleware)) {
-            if (strpos($middleware, static::MIDDLEWARE_NAMED_PREFIX) === 0) {
-                $name = substr($middleware, strlen(static::MIDDLEWARE_NAMED_PREFIX));
+            if (strpos($middleware, SchemaConstants::MIDDLEWARE_NAMED_PREFIX) === 0) {
+                $name = substr($middleware, strlen(SchemaConstants::MIDDLEWARE_NAMED_PREFIX));
                 $middleware = static::getNamedMiddleware($name);
             }
             return $middleware;

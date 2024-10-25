@@ -7,7 +7,7 @@ use support\Request;
 use support\Response;
 use Tests\Fixtures\RouteAnnotation\ExampleAttribution\middleware\SampleMiddleware;
 use Tests\Fixtures\RouteAnnotation\ExampleAttribution\middleware\SampleMiddleware2;
-use WebmanTech\Swagger\RouteAnnotation\DTO\RouteConfigDTO;
+use WebmanTech\Swagger\DTO\SchemaConstants;
 
 #[OA\Tag(name: 'crud', description: 'crud 例子')]
 class ExampleSourceController
@@ -30,13 +30,13 @@ class ExampleSourceController
         ],
         x: [
             // 指定中间件，支持各种方式
-            RouteConfigDTO::X_MIDDLEWARE => [
+            SchemaConstants::X_MIDDLEWARE => [
                 SampleMiddleware::class,
                 [SampleMiddleware2::class, ['param' => 'use params array']],
-                RouteConfigDTO::MIDDLEWARE_NAMED_PREFIX . 'sample_middleware3',
+                SchemaConstants::MIDDLEWARE_NAMED_PREFIX . 'sample_middleware3',
             ],
             // 指定路由别名
-            RouteConfigDTO::X_NAME => 'crud.list',
+            SchemaConstants::X_NAME => 'crud.list',
         ],
     )]
     public function index(Request $request): Response
@@ -63,7 +63,7 @@ class ExampleSourceController
         ],
         x: [
             // 特殊的路由路径
-            RouteConfigDTO::X_PATH => '/crud/{id:\d+}',
+            SchemaConstants::X_PATH => '/crud/{id:\d+}',
         ]
     )]
     public function show(Request $request, int $id): Response

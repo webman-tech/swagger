@@ -3,7 +3,6 @@
 namespace WebmanTech\Swagger\SchemaAnnotation\DTO;
 
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use WebmanTech\Swagger\DTO\BaseDTO;
 use WebmanTech\Swagger\SchemaAnnotation\BaseSchema;
 use WebmanTech\Swagger\SchemaAnnotation\ReflectionClassReader;

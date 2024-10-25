@@ -6,7 +6,7 @@ use OpenApi\Analysis;
 use OpenApi\Generator;
 use OpenApi\Processors\ProcessorInterface;
 use OpenApi\Annotations as OA;
-use WebmanTech\Swagger\RouteAnnotation\DTO\RouteConfigDTO;
+use WebmanTech\Swagger\DTO\SchemaConstants;
 
 class CleanRouteX implements ProcessorInterface
 {
@@ -19,9 +19,9 @@ class CleanRouteX implements ProcessorInterface
             if (!Generator::isDefault($operation->x)) {
                 $x = $operation->x;
                 unset(
-                    $x[RouteConfigDTO::X_NAME],
-                    $x[RouteConfigDTO::X_PATH],
-                    $x[RouteConfigDTO::X_MIDDLEWARE],
+                    $x[SchemaConstants::X_NAME],
+                    $x[SchemaConstants::X_PATH],
+                    $x[SchemaConstants::X_MIDDLEWARE],
                 );
                 $operation->x = $x;
             }

@@ -7,6 +7,7 @@ use OpenApi\Annotations as OA;
 use OpenApi\Context;
 use OpenApi\Generator;
 use Symfony\Component\Finder\Finder;
+use WebmanTech\Swagger\DTO\SchemaConstants;
 use WebmanTech\Swagger\RouteAnnotation\Analysers\ReflectionAnalyser;
 use WebmanTech\Swagger\RouteAnnotation\DTO\RouteConfigDTO;
 
@@ -97,14 +98,14 @@ class Reader
         return new RouteConfigDTO([
             'desc' => $desc,
             'method' => strtoupper($operation->method),
-            'path' => $x[RouteConfigDTO::X_PATH] ?? $operation->path,
+            'path' => $x[SchemaConstants::X_PATH] ?? $operation->path,
             'controller' => implode('\\', array_filter([
                 $operation->_context->namespace ?? '',
                 $operation->_context->class ?? '',
             ])),
             'action' => $operation->_context->method ?? '',
-            'name' => $x[RouteConfigDTO::X_NAME] ?? null,
-            'middlewares' => $x[RouteConfigDTO::X_MIDDLEWARE] ?? null,
+            'name' => $x[SchemaConstants::X_NAME] ?? null,
+            'middlewares' => $x[SchemaConstants::X_MIDDLEWARE] ?? null,
         ]);
     }
 }

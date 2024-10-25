@@ -5,6 +5,7 @@ namespace WebmanTech\Swagger\RouteAnnotation\Processors;
 use OpenApi\Analysis;
 use OpenApi\Annotations\Operation;
 use OpenApi\Attributes\Parameter;
+use OpenApi\Annotations\Schema as AnSchema;
 use OpenApi\Attributes\Schema;
 use OpenApi\Generator;
 use OpenApi\Processors\ProcessorInterface;
@@ -18,8 +19,11 @@ class SchemaQueryParameter implements ProcessorInterface
 {
     const REF = SchemaConstants::X_SCHEMA_TO_PARAMETERS;
 
+    private Analysis $analysis;
+
     public function __invoke(Analysis $analysis): void
     {
+        $this->analysis = $analysis;
         /** @var Operation[] $operations */
         $operations = $analysis->getAnnotationsOfType(Operation::class);
 
@@ -30,7 +34,7 @@ class SchemaQueryParameter implements ProcessorInterface
                 }
 
                 $schema = $analysis->getSchemaForSource($operation->x[self::REF]);
-                if (!$schema instanceof Schema) {
+                if (!$schema instanceof AnSchema) {
                     throw new \InvalidArgumentException('Value of `x.' . self::REF . "` contains reference to unknown schema: `{$operation->x[self::REF]}`");
                 }
 
@@ -43,8 +47,24 @@ class SchemaQueryParameter implements ProcessorInterface
     /**
      * Expand the given operation by injecting parameters for all properties of the given schema.
      */
-    private function expandQueryArgs(Operation $operation, Schema $schema): void
+    private function expandQueryArgs(Operation $operation, AnSchema $schema): void
     {
+        if (!Generator::isDefault($schema->allOf)) {
+            // support allOf
+            foreach ($schema->allOf as $itemSchema) {
+                $this->expandQueryArgs($operation, $itemSchema);
+            }
+        }
+
+        if (!Generator::isDefault($schema->ref)) {
+            // support ref
+            $refSchema = $this->analysis->openapi->ref($schema->ref);
+            if (!$refSchema instanceof AnSchema) {
+                throw new \InvalidArgumentException('ref must be a schema reference');
+            }
+            $this->expandQueryArgs($operation, $refSchema);
+        }
+
         if (Generator::isDefault($schema->properties) || !$schema->properties) {
             return;
         }
@@ -53,18 +73,18 @@ class SchemaQueryParameter implements ProcessorInterface
 
         foreach ($schema->properties as $property) {
             $isNullable = Generator::isDefault($property->nullable) ? false : $property->nullable;
-            $schema = new Schema(
+            $schemaNew = new Schema(
                 type: Generator::isDefault($property->format) ? $property->type : $property->format,
                 nullable: $isNullable
             );
-            $schema->_context = $operation->_context; // inherit context from operation, required to pretend to be a parameter
+            $schemaNew->_context = $operation->_context; // inherit context from operation, required to pretend to be a parameter
 
             $parameter = new Parameter(
                 name: $property->property,
                 description: Generator::isDefault($property->description) ? null : $property->description,
                 in: 'query',
                 required: !$isNullable,
-                schema: $schema,
+                schema: $schemaNew,
                 example: $property->example,
             );
             $parameter->_context = $operation->_context; // inherit context from operation, required to pretend to be a parameter

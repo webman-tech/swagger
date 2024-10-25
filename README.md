@@ -148,6 +148,13 @@ class TestSchema extends BaseSchema {
     public int $age = 0;
     #[OA\Property(description: '备注', example: 'xxx')]
     public string $remark = '';
+    
+    protected function validationExtraRules() : array{
+        // 此处可自定义 校验规则
+        return [
+            'age' => 'max:100',        
+        ];
+    }
 }
 ```
 
@@ -197,6 +204,10 @@ class IndexController {
     }
 }
 ```
+
+注意：目前包含以下内容
+
+- Data Types: 基本数据类型（int、float、string、bool、array、object）支持，不支持校验 string|int 这种联合类型
 
 ## 参考
 

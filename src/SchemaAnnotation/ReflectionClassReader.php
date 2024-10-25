@@ -10,6 +10,9 @@ use ReflectionNamedType;
 use ReflectionUnionType;
 use WebmanTech\Swagger\SchemaAnnotation\DTO\ClassInfoDTO;
 
+/**
+ * @link https://swagger.io/docs/specification/v3_0/data-models/data-types/
+ */
 final class ReflectionClassReader
 {
     private array $cache = [];

@@ -90,7 +90,7 @@ class RouteConfigDTO extends BaseDTO
         throw new InvalidArgumentException('Invalid middleware type');
     }
 
-    private static $namedMiddlewares = [];
+    private static array $namedMiddlewares = [];
 
     /**
      * 设置命名的路由中间件
@@ -100,7 +100,7 @@ class RouteConfigDTO extends BaseDTO
      */
     public static function registerNamedMiddleware(string $name, $middleware): void
     {
-        static::$namedMiddlewares[$name] = $middleware;
+        self::$namedMiddlewares[$name] = $middleware;
     }
 
     /**
@@ -110,6 +110,6 @@ class RouteConfigDTO extends BaseDTO
      */
     public static function getNamedMiddleware(string $name)
     {
-        return static::$namedMiddlewares[$name] ?? null;
+        return self::$namedMiddlewares[$name] ?? null;
     }
 }

@@ -6,7 +6,6 @@ use Doctrine\Common\Annotations\Annotation;
 use OpenApi\Annotations as OA;
 use OpenApi\Generator;
 use OpenApi\Pipeline;
-use OpenApi\Util;
 use Symfony\Component\Finder\Finder;
 use Throwable;
 use Webman\Http\Response;
@@ -57,7 +56,7 @@ class OpenapiController
         return raw_view($config->view, $config->data, $config->view_path);
     }
 
-    private static $docCache = [];
+    private static array $docCache = [];
 
     /**
      * @param array|ConfigOpenapiDocDTO $config
@@ -72,16 +71,16 @@ class OpenapiController
 
         $cacheKey = $config->getCacheKey();
 
-        if (!isset(static::$docCache[$cacheKey])) {
+        if (!isset(self::$docCache[$cacheKey])) {
             $openapi = $this->scanAndGenerateOpenapi($config->scan_path, $config->scan_exclude);
 
             $config->applyModify($openapi);
 
             $yaml = $openapi->toYaml();
 
-            static::$docCache[$cacheKey] = $yaml;
+            self::$docCache[$cacheKey] = $yaml;
         }
-        $yaml = static::$docCache[$cacheKey];
+        $yaml = self::$docCache[$cacheKey];
 
         return response($yaml, 200, [
             'Content-Type' => 'application/x-yaml',

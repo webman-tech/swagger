@@ -19,7 +19,7 @@ abstract class BaseSchema implements \JsonSerializable
      * 创建并验证数据
      * @param array $data
      * @param null|ValidatorFactory $validator 提供验证器后会先执行验证
-     * @return BaseSchema
+     * @return static
      * @throws ValidationException
      */
     public static function create(array $data, $validator = null): static
@@ -31,7 +31,7 @@ abstract class BaseSchema implements \JsonSerializable
      * 装载数据
      * @param array $data
      * @param null|ValidatorFactory $validator 提供验证器后会先执行验证
-     * @return $this
+     * @return static
      * @throws ValidationException
      */
     public function load(array $data, $validator = null): static

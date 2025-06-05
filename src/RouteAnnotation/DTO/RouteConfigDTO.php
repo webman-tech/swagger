@@ -14,7 +14,7 @@ use WebmanTech\Swagger\DTO\SchemaConstants;
  * @property string $controller
  * @property string $action
  * @property null|string $name
- * @property null|array<int, string>|string $middlewares
+ * @property null|array<int, mixed>|string $middlewares
  */
 class RouteConfigDTO extends BaseDTO
 {
@@ -76,7 +76,7 @@ class RouteConfigDTO extends BaseDTO
 
     /**
      * @param string|array $middleware
-     * @return array|callable|\Closure|string|null
+     * @return null|string|array|callable
      */
     private function formatMiddleware($middleware)
     {

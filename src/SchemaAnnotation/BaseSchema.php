@@ -93,7 +93,7 @@ abstract class BaseSchema implements \JsonSerializable
 
     public function __toString(): string
     {
-        return json_encode($this);
+        return json_encode($this) ?: '{}';
     }
 
     /**

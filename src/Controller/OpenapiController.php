@@ -89,7 +89,7 @@ class OpenapiController
 
     /**
      * 扫描并生成 yaml
-     * @param string|array|Finder $scanPath
+     * @param string|array $scanPath
      * @param array|null|string $scanExclude
      * @param int $errorCount
      * @return OA\OpenApi
@@ -102,7 +102,7 @@ class OpenapiController
         if (is_string($scanPath)) {
             $scanPath = [$scanPath];
         }
-        if (is_array($scanPath) && !$scanPath) {
+        if (!$scanPath) {
             $scanPath = array_values($requiredElements);
         }
 
@@ -135,15 +135,11 @@ class OpenapiController
 
             // http://zircote.github.io/swagger-php/guide/required-elements.html
             if ($e->getMessage() === 'Required @OA\Info() not found') {
-                if (is_array($scanPath)) {
-                    $scanPath = array_merge($scanPath, [$requiredElements['info']]);
-                }
+                $scanPath = array_merge($scanPath, [$requiredElements['info']]);
                 return $this->scanAndGenerateOpenapi($scanPath, $scanExclude, $errorCount + 1);
             }
             if ($e->getMessage() === 'Required @OA\PathItem() not found') {
-                if (is_array($scanPath)) {
-                    $scanPath = array_merge($scanPath, [$requiredElements['pathItem']]);
-                }
+                $scanPath = array_merge($scanPath, [$requiredElements['pathItem']]);
                 return $this->scanAndGenerateOpenapi($scanPath, $scanExclude, $errorCount + 1);
             }
 

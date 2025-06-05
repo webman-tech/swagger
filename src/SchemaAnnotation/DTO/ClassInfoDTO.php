@@ -46,7 +46,11 @@ class ClassInfoDTO extends BaseDTO
         }
         $types = $this->propertyTypes[$property];
         if (is_string($types) && str_starts_with($types, 'object_')) {
-            return substr($types, 7);
+            $class = substr($types, 7);
+            if (!class_exists($class) || !is_a($class, BaseSchema::class, true)) {
+                throw new \InvalidArgumentException('object type is not BaseSchema: ' . $types);
+            }
+            return $class;
         }
         return null;
     }
@@ -62,7 +66,11 @@ class ClassInfoDTO extends BaseDTO
         }
         $types = $this->propertyTypes[$property];
         if (is_string($types) && str_starts_with($types, 'array_')) {
-            return substr($types, 6);
+            $class = substr($types, 6);
+            if (!class_exists($class) || !is_a($class, BaseSchema::class, true)) {
+                throw new \InvalidArgumentException('object type is not BaseSchema: ' . $types);
+            }
+            return $class;
         }
         return null;
     }

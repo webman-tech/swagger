@@ -8,7 +8,7 @@ use WebmanTech\Swagger\RouteAnnotation\DTO\RouteConfigDTO;
 class Register
 {
     /**
-     * @var array|RouteConfigDTO[]
+     * @var RouteConfigDTO[]
      */
     private $config;
 
@@ -22,11 +22,13 @@ class Register
         } elseif (is_array($config)) {
             $firstValue = reset($config);
             if (!$firstValue instanceof RouteConfigDTO) {
-                $config = array_map(function ($item) {
+                /** @phpstan-ignore-next-line */
+                $config = array_map(function (array $item) {
                     return new RouteConfigDTO($item);
                 }, $config);
             }
         }
+        /** @phpstan-ignore-next-line */
         $this->config = $config;
     }
 

@@ -31,6 +31,9 @@ final class ReflectionClassReader
         return $self->readByCache($class);
     }
 
+    /**
+     * @param class-string $class
+     */
     private function readByCache(string $class): ClassInfoDTO
     {
         if (!isset($this->cache[$class])) {
@@ -39,6 +42,9 @@ final class ReflectionClassReader
         return $this->cache[$class];
     }
 
+    /**
+     * @param class-string $class
+     */
     private function parse(string $class): ClassInfoDTO
     {
         $classInfo = new ClassInfoDTO();
@@ -123,6 +129,7 @@ final class ReflectionClassReader
     private function getTypesFromReflectionType(\ReflectionType $type): string|array
     {
         if ($type instanceof ReflectionUnionType) {
+            /** @phpstan-ignore-next-line */
             return array_map(fn(ReflectionNamedType $type) => $this->getTypesFromReflectionType($type), $type->getTypes());
         }
         if ($type instanceof ReflectionIntersectionType) {
@@ -141,10 +148,12 @@ final class ReflectionClassReader
     private function getTypesFromOAProperty(OA\Property $property): string|array
     {
         if (!$this->isOADefault($property->ref)) {
+            /** @phpstan-ignore-next-line */
             return 'object_' . $property->ref;
         }
         if (!$this->isOADefault($property->items)) {
             if (!$this->isOADefault($property->items->ref)) {
+                /** @phpstan-ignore-next-line */
                 return 'array_' . $property->items->ref;
             }
         }

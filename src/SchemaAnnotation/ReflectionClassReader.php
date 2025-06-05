@@ -145,7 +145,7 @@ final class ReflectionClassReader
             }
             return 'object_' . $type->getName();
         }
-        throw new \InvalidArgumentException(sprintf('Unsupported type "%s"', get_class($type)));
+        throw new \InvalidArgumentException(sprintf('Unsupported type "%s"', $type::class));
     }
 
     private function getTypesFromOAProperty(OA\Property $property): string|array

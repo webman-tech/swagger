@@ -65,7 +65,7 @@ class HostForbiddenMiddleware implements MiddlewareInterface
         }
         $host = (string)$request->host();
         foreach ($this->config->host_white_list as $needle) {
-            if ($needle !== '' && str_contains($host, $needle)) {
+            if ($needle !== '' && str_contains($host, (string) $needle)) {
                 return [true, ''];
             }
         }

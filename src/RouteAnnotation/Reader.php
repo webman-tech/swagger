@@ -13,9 +13,9 @@ use WebmanTech\Swagger\RouteAnnotation\DTO\RouteConfigDTO;
 
 class Reader
 {
-    private Context $context;
-    private ReflectionAnalyser $analyser;
-    private Generator $generator;
+    private readonly Context $context;
+    private readonly ReflectionAnalyser $analyser;
+    private readonly Generator $generator;
     private array $pathItemOperationAttributes = [
         'get',
         'post',

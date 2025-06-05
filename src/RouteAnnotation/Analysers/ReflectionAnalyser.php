@@ -22,8 +22,8 @@ class ReflectionAnalyser extends \OpenApi\Analysers\ReflectionAnalyser
             return parent::analyzeFqdn($fqdn, $analysis, $details);
         } catch (\Throwable $e) {
             if (
-                strpos($e->getMessage(), 'Class') !== false
-                && strpos($e->getMessage(), 'not found') !== false
+                str_contains($e->getMessage(), 'Class')
+                && str_contains($e->getMessage(), 'not found')
             ) {
                 // 忽略未定义的类的情况（webman初始框架没有引入 illuminate/database，会导致扫描分析报错）
                 return $analysis;

@@ -82,16 +82,14 @@ class RouteConfigDTO extends BaseDTO
     private function formatMiddleware($middleware)
     {
         if (is_string($middleware)) {
-            if (strpos($middleware, SchemaConstants::MIDDLEWARE_NAMED_PREFIX) === 0) {
+            if (str_starts_with($middleware, SchemaConstants::MIDDLEWARE_NAMED_PREFIX)) {
                 $name = substr($middleware, strlen(SchemaConstants::MIDDLEWARE_NAMED_PREFIX));
                 $middleware = static::getNamedMiddleware($name);
             }
             return $middleware;
         }
         if (is_array($middleware)) {
-            return function () use ($middleware) {
-                return Container::make($middleware[0], (array)($middleware[1] ?? []));
-            };
+            return fn() => Container::make($middleware[0], (array)($middleware[1] ?? []));
         }
 
         /** @phpstan-ignore-next-line */

@@ -6,9 +6,9 @@ use Illuminate\Contracts\Validation\Factory as ValidatorFactory;
 use Illuminate\Validation\ValidationException;
 use WebmanTech\Swagger\SchemaAnnotation\DTO\ClassInfoDTO;
 
-abstract class BaseSchema implements \JsonSerializable
+abstract class BaseSchema implements \JsonSerializable, \Stringable
 {
-    private ClassInfoDTO $classInfo;
+    private readonly ClassInfoDTO $classInfo;
 
     final public function __construct()
     {
@@ -64,7 +64,7 @@ abstract class BaseSchema implements \JsonSerializable
             // 属性赋值
             try {
                 $this->$property = $value;
-            } catch (\TypeError $e) {
+            } catch (\TypeError) {
                 // 类型错误忽略
             }
         }

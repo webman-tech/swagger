@@ -23,9 +23,7 @@ class Register
             $firstValue = reset($config);
             if (!$firstValue instanceof RouteConfigDTO) {
                 /** @phpstan-ignore-next-line */
-                $config = array_map(function (array $item) {
-                    return new RouteConfigDTO($item);
-                }, $config);
+                $config = array_map(fn(array $item) => new RouteConfigDTO($item), $config);
             }
         }
         /** @phpstan-ignore-next-line */

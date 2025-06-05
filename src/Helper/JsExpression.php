@@ -2,16 +2,13 @@
 
 namespace WebmanTech\Swagger\Helper;
 
-class JsExpression
+class JsExpression implements \Stringable
 {
-    private string $expression;
-
-    public function __construct(string $expression)
+    public function __construct(private readonly string $expression)
     {
-        $this->expression = $expression;
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         return $this->expression;
     }

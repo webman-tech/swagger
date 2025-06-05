@@ -19,7 +19,7 @@ use WebmanTech\Swagger\Helper\ArrayHelper;
     <?php endforeach; ?>
 </head>
 <body>
-<div id="<?= ltrim($ui_config['dom_id'], '#') ?>"></div>
+<div id="<?= ltrim((string) $ui_config['dom_id'], '#') ?>"></div>
 <?php foreach ($js as $url): ?>
     <script src="<?= $url ?>" crossorigin></script>
 <?php endforeach; ?>

@@ -49,13 +49,9 @@ class Swagger
         $docRoute = 'doc';
 
         // 注册 swagger 访问的路由
-        Route::get($config->route_prefix, function () use ($controller, $docRoute, $config) {
-            return $controller->swaggerUI($docRoute, $config->swagger_ui);
-        })->middleware($hostForbiddenMiddleware);
+        Route::get($config->route_prefix, fn() => $controller->swaggerUI($docRoute, $config->swagger_ui))->middleware($hostForbiddenMiddleware);
         // 注册 openapi doc 的路由
-        Route::get("{$config->route_prefix}/{$docRoute}", function () use ($controller, $config) {
-            return $controller->openapiDoc($config->openapi_doc);
-        })->middleware($hostForbiddenMiddleware);
+        Route::get("{$config->route_prefix}/{$docRoute}", fn() => $controller->openapiDoc($config->openapi_doc))->middleware($hostForbiddenMiddleware);
 
         // 注册 api 接口路由
         if ($config->register_webman_route) {

@@ -18,9 +18,9 @@ use WebmanTech\Swagger\RouteAnnotation\Processors\SchemaQueryParameter;
 
 class OpenapiController
 {
-    private bool $canUseAnnotations;
-    private bool $canUseAttributes;
-    private array $requiredElements;
+    private readonly bool $canUseAnnotations;
+    private readonly bool $canUseAttributes;
+    private readonly array $requiredElements;
 
     public function __construct()
     {
@@ -114,7 +114,7 @@ class OpenapiController
                 ->setAliases(Generator::DEFAULT_ALIASES)
                 ->setNamespaces(Generator::DEFAULT_NAMESPACES)
                 ->setAnalyser(new ReflectionAnalyser())
-                ->withProcessorPipeline(function (Pipeline $pipeline) {
+                ->withProcessorPipeline(function (Pipeline $pipeline): void {
                     $pipeline
                         ->add(new SchemaQueryParameter())
                         ->add(new CleanRouteX()) // 清理路由注解

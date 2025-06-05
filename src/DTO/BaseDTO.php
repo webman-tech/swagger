@@ -6,11 +6,8 @@ use WebmanTech\Swagger\Helper\ArrayHelper;
 
 class BaseDTO implements \JsonSerializable
 {
-    protected array $_data;
-
-    final public function __construct(array $data = [])
+    final public function __construct(protected array $_data = [])
     {
-        $this->_data = $data;
         $this->initData();
     }
 

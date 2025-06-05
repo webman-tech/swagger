@@ -23,12 +23,15 @@ class ConfigRegisterRouteDTO extends BaseDTO
             'register_webman_route' => false,
         ], $this->_data);
 
+        /* @phpstan-ignore-next-line */
         if (is_array($this->host_forbidden)) {
             $this->host_forbidden = new ConfigHostForbiddenDTO($this->host_forbidden);
         }
+        /* @phpstan-ignore-next-line */
         if (is_array($this->swagger_ui)) {
             $this->swagger_ui = new ConfigSwaggerUiDTO($this->swagger_ui);
         }
+        /* @phpstan-ignore-next-line */
         if (is_array($this->openapi_doc)) {
             $this->openapi_doc = new ConfigOpenapiDocDTO($this->openapi_doc);
         }

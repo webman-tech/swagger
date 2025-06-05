@@ -45,7 +45,7 @@ class OpenapiController
      */
     public function swaggerUI(string $docRoute, $config = []): Response
     {
-        if (!$config instanceof ConfigSwaggerUiDTO) {
+        if (is_array($config)) {
             $config = new ConfigSwaggerUiDTO($config);
         }
 

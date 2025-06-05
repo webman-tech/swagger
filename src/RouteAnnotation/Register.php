@@ -13,7 +13,7 @@ class Register
     private $config;
 
     /**
-     * @param array|RouteConfigDTO|RouteConfigDTO[] $config
+     * @param RouteConfigDTO|RouteConfigDTO[]|array[] $config
      */
     public function __construct($config)
     {

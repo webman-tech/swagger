@@ -39,7 +39,7 @@ class OpenapiController
 
     /**
      * @param string $docRoute
-     * @param array|ConfigOpenapiDocDTO $config
+     * @param array|ConfigSwaggerUiDTO $config
      * @return Response
      * @throws Throwable
      */
@@ -65,7 +65,7 @@ class OpenapiController
      */
     public function openapiDoc($config = []): Response
     {
-        if (!$config instanceof ConfigOpenapiDocDTO) {
+        if (is_array($config)) {
             $config = new ConfigOpenapiDocDTO($config);
         }
 

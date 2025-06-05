@@ -36,8 +36,9 @@ abstract class BaseSchema implements \JsonSerializable
      */
     public function load(array $data, $validator = null): static
     {
-        if ($validator instanceof ValidatorFactory) {
-            $validator = $validator->make(
+        $factory = $validator;
+        if ($factory instanceof ValidatorFactory) {
+            $validator = $factory->make(
                 $data,
                 $this->classInfo->getLaravelValidationRules($this->validationExtraRules()),
                 $this->validationMessages(),
@@ -54,11 +55,11 @@ abstract class BaseSchema implements \JsonSerializable
             }
             // 如果是 object 类型的
             if ($schemaClass = $this->classInfo->getPropertyObjectSchemaType($property)) {
-                $value = (new $schemaClass)->load($value, $validator);
+                $value = (new $schemaClass)->load($value, $factory);
             }
             // 如果是 array 嵌套形式的
             if ($schemaClass = $this->classInfo->getPropertyArrayItemSchemaType($property)) {
-                $value = array_map(fn($item) => (new $schemaClass)->load($item, $validator), $value);
+                $value = array_map(fn($item) => (new $schemaClass)->load($item, $factory), $value);
             }
             // 属性赋值
             try {

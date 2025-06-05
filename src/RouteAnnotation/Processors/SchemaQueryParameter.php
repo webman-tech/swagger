@@ -57,7 +57,7 @@ class SchemaQueryParameter
 
         if (!Generator::isDefault($schema->ref)) {
             // support ref
-            $refSchema = $this->analysis->openapi->ref((string)$schema->ref);
+            $refSchema = $this->analysis->openapi?->ref((string)$schema->ref);
             if (!$refSchema instanceof AnSchema) {
                 throw new \InvalidArgumentException('ref must be a schema reference');
             }

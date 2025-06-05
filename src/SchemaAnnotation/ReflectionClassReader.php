@@ -82,7 +82,7 @@ final class ReflectionClassReader
             }
             /** @var OA\Property $oaProperty */
             $oaProperty = $attributes[0]->newInstance();
-            if ($property->hasType() && $property->getType()->allowsNull()) {
+            if ($property->hasType() && $property->getType()?->allowsNull()) {
                 $nullable[] = $property->getName();
             }
             if (!$this->isOADefault($oaProperty->nullable) && $oaProperty->nullable) {
@@ -126,8 +126,11 @@ final class ReflectionClassReader
         return Generator::isDefault($value);
     }
 
-    private function getTypesFromReflectionType(\ReflectionType $type): string|array
+    private function getTypesFromReflectionType(?\ReflectionType $type): string|array
     {
+        if ($type === null) {
+            return 'mixed';
+        }
         if ($type instanceof ReflectionUnionType) {
             /** @phpstan-ignore-next-line */
             return array_map(fn(ReflectionNamedType $type) => $this->getTypesFromReflectionType($type), $type->getTypes());
@@ -168,11 +171,8 @@ final class ReflectionClassReader
         return $this->normalizeType($type);
     }
 
-    private function normalizeType(?string $type): ?string
+    private function normalizeType(string $type): string
     {
-        if ($type === null) {
-            return null;
-        }
         return match ($type) {
             'string' => 'string',
             'int', 'integer' => 'integer',

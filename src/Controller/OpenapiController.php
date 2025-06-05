@@ -110,7 +110,7 @@ class OpenapiController
             /**
              * @see Generator::scan
              */
-            return (new Generator())
+            $openapi = (new Generator())
                 ->setAliases(Generator::DEFAULT_ALIASES)
                 ->setNamespaces(Generator::DEFAULT_NAMESPACES)
                 ->setAnalyser(new ReflectionAnalyser())
@@ -128,6 +128,10 @@ class OpenapiController
                         ->in($scanPath)
                         ->notPath($scanExclude ?? [])
                 );
+            if ($openapi === null) {
+                throw new \Exception('openapi generate failed');
+            }
+            return $openapi;
         } catch (Throwable $e) {
             if ($errorCount > count($requiredElements)) {
                 throw $e;

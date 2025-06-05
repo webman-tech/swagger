@@ -48,6 +48,9 @@ class Reader
 
         $this->generator->getProcessorPipeline()->process($analysis);
         $openapi = $analysis->openapi;
+        if ($openapi === null) {
+            return [];
+        }
 
         $data = [];
         if (!Generator::isDefault($openapi->paths)) {

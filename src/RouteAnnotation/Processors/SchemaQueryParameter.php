@@ -4,8 +4,8 @@ namespace WebmanTech\Swagger\RouteAnnotation\Processors;
 
 use OpenApi\Analysis;
 use OpenApi\Annotations\Operation;
-use OpenApi\Attributes\Parameter;
 use OpenApi\Annotations\Schema as AnSchema;
+use OpenApi\Attributes\Parameter;
 use OpenApi\Attributes\Schema;
 use OpenApi\Generator;
 use WebmanTech\Swagger\DTO\SchemaConstants;
@@ -96,6 +96,7 @@ class SchemaQueryParameter
     {
         unset($operation->x[self::REF]);
         if (!$operation->x) {
+            /* @phpstan-ignore-next-line */
             $operation->x = Generator::UNDEFINED;
         }
     }

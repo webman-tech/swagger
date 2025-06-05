@@ -3,8 +3,8 @@
 namespace WebmanTech\Swagger\RouteAnnotation\Processors;
 
 use OpenApi\Analysis;
-use OpenApi\Generator;
 use OpenApi\Annotations as OA;
+use OpenApi\Generator;
 use WebmanTech\Swagger\DTO\SchemaConstants;
 
 class CleanRouteX
@@ -22,6 +22,7 @@ class CleanRouteX
                     $operation->x[SchemaConstants::X_MIDDLEWARE],
                 );
                 if (!$operation->x) {
+                    /* @phpstan-ignore-next-line */
                     $operation->x = Generator::UNDEFINED;
                 }
             }

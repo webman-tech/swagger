@@ -1,5 +1,10 @@
 # webman-tech/swagger
 
+本项目是从 [webman-tech/components-monorepo](https://github.com/orgs/webman-tech/components-monorepo) 自动 split
+出来的，请勿直接修改
+
+> 简介
+
 [swagger openapi](https://swagger.io/) 在 webman 中一键配置启用
 
 ## 安装
@@ -26,7 +31,8 @@ composer require webman-tech/swagger
 
 默认扫描整个 `app_path()`
 
-之后在 Controller 写对应的注解即可，参考 [zircote/swagger-php petstore.swagger.io](https://github.com/zircote/swagger-php/tree/master/Examples/petstore.swagger.io)
+之后在 Controller
+写对应的注解即可，参考 [zircote/swagger-php petstore.swagger.io](https://github.com/zircote/swagger-php/tree/master/Examples/petstore.swagger.io)
 
 ### 修改 @OA\Info 等全局的配置
 

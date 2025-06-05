@@ -65,6 +65,7 @@ class RouteConfigDTO extends BaseDTO
         if (is_array($this->middlewares)) {
             $temp = [];
             foreach ($this->middlewares as $middleware) {
+                /** @phpstan-ignore-next-line */
                 $temp[] = $this->formatMiddleware($middleware);
             }
             return array_filter($this->middlewares = $temp);
@@ -89,7 +90,7 @@ class RouteConfigDTO extends BaseDTO
         }
         if (is_array($middleware)) {
             return function () use ($middleware) {
-                return Container::make($middleware[0], $middleware[1] ?? []);
+                return Container::make($middleware[0], (array)($middleware[1] ?? []));
             };
         }
 

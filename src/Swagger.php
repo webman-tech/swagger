@@ -18,7 +18,7 @@ class Swagger
      */
     public function registerGlobalRoute()
     {
-        $config = new ConfigRegisterRouteDTO(ConfigHelper::get('app.global_route', []));
+        $config = new ConfigRegisterRouteDTO((array)ConfigHelper::get('app.global_route', []));
         if (!$config->openapi_doc->scan_path) {
             $config->openapi_doc->scan_path = [app_path()];
         }

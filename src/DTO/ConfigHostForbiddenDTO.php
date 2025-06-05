@@ -21,7 +21,7 @@ class ConfigHostForbiddenDTO extends BaseDTO
                 'ip_white_list' => [],
                 'host_white_list' => [],
             ],
-            ConfigHelper::get('app.host_forbidden', []),
+            (array)ConfigHelper::get('app.host_forbidden', []),
             $this->_data
         );
     }

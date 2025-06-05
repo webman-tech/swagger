@@ -14,6 +14,7 @@ class ConfigSwaggerUiDTO extends BaseDTO
 {
     protected function initData(): void
     {
+        $appName = (string)config('app.name', 'swagger');
         $this->_data = ArrayHelper::merge(
             [
                 'view' => 'swagger-ui',
@@ -28,7 +29,7 @@ class ConfigSwaggerUiDTO extends BaseDTO
                         'https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js',
                         //'https://unpkg.com/swagger-ui-dist/swagger-ui-standalone-preset.js',
                     ],
-                    'title' => config('app.name', 'swagger') . ' - openapi',
+                    'title' => $appName . ' - openapi',
                     'ui_config' => [
                         // @link https://swagger.io/docs/open-source-tools/swagger-ui/usage/configuration/
                         'dom_id' => '#swagger-ui',

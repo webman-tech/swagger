@@ -36,7 +36,7 @@ class RouteConfigDTO extends BaseDTO
      */
     public const MIDDLEWARE_NAMED_PREFIX = SchemaConstants::MIDDLEWARE_NAMED_PREFIX;
 
-    public function initData()
+    public function initData(): void
     {
         $this->_data = array_merge([
             'desc' => '',
@@ -74,6 +74,10 @@ class RouteConfigDTO extends BaseDTO
         throw new InvalidArgumentException('Invalid middlewares type');
     }
 
+    /**
+     * @param string|array $middleware
+     * @return array|callable|\Closure|string|null
+     */
     private function formatMiddleware($middleware)
     {
         if (is_string($middleware)) {
@@ -89,6 +93,7 @@ class RouteConfigDTO extends BaseDTO
             };
         }
 
+        /** @phpstan-ignore-next-line */
         throw new InvalidArgumentException('Invalid middleware type');
     }
 

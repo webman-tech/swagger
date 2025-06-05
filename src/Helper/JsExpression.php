@@ -4,7 +4,7 @@ namespace WebmanTech\Swagger\Helper;
 
 class JsExpression
 {
-    private $expression;
+    private string $expression;
 
     public function __construct(string $expression)
     {

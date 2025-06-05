@@ -12,7 +12,7 @@ namespace WebmanTech\Swagger\DTO;
  */
 class ConfigRegisterRouteDTO extends BaseDTO
 {
-    public function initData()
+    public function initData(): void
     {
         $this->_data = array_merge([
             'enable' => true,

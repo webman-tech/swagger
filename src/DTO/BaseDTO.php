@@ -6,7 +6,7 @@ use WebmanTech\Swagger\Helper\ArrayHelper;
 
 class BaseDTO implements \JsonSerializable
 {
-    protected $_data;
+    protected array $_data;
 
     final public function __construct(array $data = [])
     {
@@ -14,21 +14,25 @@ class BaseDTO implements \JsonSerializable
         $this->initData();
     }
 
-    protected function initData()
+    protected function initData(): void
     {
     }
 
-    public function __get($name)
+    public function __get(string $name): mixed
     {
         return $this->_data[$name] ?? null;
     }
 
-    public function __set($name, $value)
+    public function __set(string $name, mixed $value): void
     {
         $this->_data[$name] = $value;
     }
 
-    public function merge(...$data)
+    /**
+     * @param mixed ...$data
+     * @return void
+     */
+    public function merge(...$data): void
     {
         $toMerge = [];
         foreach ($data as $items) {

@@ -16,7 +16,7 @@ use WebmanTech\Swagger\SchemaAnnotation\ReflectionClassReader;
  */
 class ClassInfoDTO extends BaseDTO
 {
-    protected function initData()
+    protected function initData(): void
     {
         $this->_data = array_merge([
             'required' => [],
@@ -100,6 +100,7 @@ class ClassInfoDTO extends BaseDTO
                 if (is_string($extraRules)) {
                     $extraRules = explode('|', $extraRules);
                 }
+                /** @phpstan-ignore-next-line */
                 $rules[$property] = collect($rules[$property])
                     ->merge($extraRules)
                     ->unique(function ($value) {

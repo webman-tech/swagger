@@ -39,7 +39,7 @@ final class ReflectionClassReader
         return $this->cache[$class];
     }
 
-    private function parse($class): ClassInfoDTO
+    private function parse(string $class): ClassInfoDTO
     {
         $classInfo = new ClassInfoDTO();
 
@@ -111,6 +111,10 @@ final class ReflectionClassReader
         return $propertyTypes;
     }
 
+    /**
+     * @param mixed $value
+     * @return bool
+     */
     private function isOADefault($value): bool
     {
         return Generator::isDefault($value);

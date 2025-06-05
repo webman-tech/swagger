@@ -9,7 +9,7 @@ use WebmanTech\Swagger\DTO\SchemaConstants;
 
 class CleanRouteX
 {
-    public function __invoke(Analysis $analysis)
+    public function __invoke(Analysis $analysis): void
     {
         /** @var OA\Operation[] $operations */
         $operations = $analysis->merged()->getAnnotationsOfType(OA\Operation::class);

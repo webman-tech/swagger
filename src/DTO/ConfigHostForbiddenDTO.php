@@ -12,7 +12,7 @@ use WebmanTech\Swagger\Helper\ConfigHelper;
  */
 class ConfigHostForbiddenDTO extends BaseDTO
 {
-    protected function initData()
+    protected function initData(): void
     {
         $this->_data = array_merge(
             [

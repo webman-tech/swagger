@@ -13,10 +13,10 @@ use WebmanTech\Swagger\RouteAnnotation\DTO\RouteConfigDTO;
 
 class Reader
 {
-    private $context;
-    private $analyser;
-    private $generator;
-    private $pathItemOperationAttributes = [
+    private Context $context;
+    private ReflectionAnalyser $analyser;
+    private Generator $generator;
+    private array $pathItemOperationAttributes = [
         'get',
         'post',
         'put',
@@ -35,7 +35,7 @@ class Reader
     }
 
     /**
-     * @param $pathOrFile
+     * @param string|array $pathOrFile
      * @return array<string, RouteConfigDTO>
      */
     public function getData($pathOrFile): array
@@ -69,6 +69,10 @@ class Reader
         return $data;
     }
 
+    /**
+     * @param string|array $pathOrFile
+     * @return \SplFileInfo[]|Finder
+     */
     private function formatPath($pathOrFile)
     {
         if (is_string($pathOrFile)) {

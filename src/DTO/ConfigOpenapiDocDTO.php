@@ -14,7 +14,7 @@ use WebmanTech\Swagger\Helper\ConfigHelper;
  */
 class ConfigOpenapiDocDTO extends BaseDTO
 {
-    protected function initData()
+    protected function initData(): void
     {
         $this->_data = ArrayHelper::merge(
             [
@@ -40,7 +40,7 @@ class ConfigOpenapiDocDTO extends BaseDTO
         return $cacheKey ?? md5(serialize($this->scan_path));
     }
 
-    public function applyModify(OpenApi $openapi)
+    public function applyModify(OpenApi $openapi): void
     {
         if (is_callable($this->modify)) {
             call_user_func($this->modify, $openapi);

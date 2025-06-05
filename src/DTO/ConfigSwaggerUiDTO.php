@@ -12,7 +12,7 @@ use WebmanTech\Swagger\Helper\ConfigHelper;
  */
 class ConfigSwaggerUiDTO extends BaseDTO
 {
-    protected function initData()
+    protected function initData(): void
     {
         $this->_data = ArrayHelper::merge(
             [

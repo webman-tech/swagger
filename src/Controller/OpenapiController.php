@@ -18,9 +18,9 @@ use WebmanTech\Swagger\RouteAnnotation\Processors\SchemaQueryParameter;
 
 class OpenapiController
 {
-    private $canUseAnnotations;
-    private $canUseAttributes;
-    private $requiredElements;
+    private bool $canUseAnnotations;
+    private bool $canUseAttributes;
+    private array $requiredElements;
 
     public function __construct()
     {

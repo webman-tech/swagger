@@ -18,7 +18,7 @@ class ConfigSwaggerUiDTO extends BaseDTO
         $this->_data = ArrayHelper::merge(
             [
                 'view' => 'swagger-ui',
-                'view_path' => '../vendor/webman-tech/swagger/src', // 相对 app_path() 的路径
+                'view_path' => ConfigHelper::getViewPath(),
                 'data' => [
                     // @link https://github.com/swagger-api/swagger-ui/blob/master/dist/swagger-initializer.js
                     'css' => [

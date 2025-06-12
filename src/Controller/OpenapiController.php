@@ -13,8 +13,11 @@ use WebmanTech\Swagger\DTO\ConfigOpenapiDocDTO;
 use WebmanTech\Swagger\DTO\ConfigSwaggerUiDTO;
 use WebmanTech\Swagger\Helper\JsExpression;
 use WebmanTech\Swagger\RouteAnnotation\Analysers\ReflectionAnalyser;
+use WebmanTech\Swagger\RouteAnnotation\Processors\AppendResponse;
 use WebmanTech\Swagger\RouteAnnotation\Processors\CleanRouteX;
 use WebmanTech\Swagger\RouteAnnotation\Processors\SchemaQueryParameter;
+use WebmanTech\Swagger\RouteAnnotation\Processors\SchemaRequest;
+use WebmanTech\Swagger\RouteAnnotation\Processors\SchemaResponse;
 
 class OpenapiController
 {
@@ -117,6 +120,9 @@ class OpenapiController
                 ->withProcessorPipeline(function (Pipeline $pipeline): void {
                     $pipeline
                         ->add(new SchemaQueryParameter())
+                        ->add(new SchemaRequest())
+                        ->add(new SchemaResponse())
+                        ->add(new AppendResponse())
                         ->add(new CleanRouteX()) // 清理路由注解
                     ;
                 })

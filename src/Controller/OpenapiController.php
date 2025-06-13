@@ -66,14 +66,14 @@ class OpenapiController
 
             $config->applyModify($openapi);
 
-            $yaml = $openapi->toYaml();
+            $result = $config->generateWithFormat($openapi);
 
-            self::$docCache[$cacheKey] = $yaml;
+            self::$docCache[$cacheKey] = $result;
         }
-        $yaml = self::$docCache[$cacheKey];
+        [$content, $contentType] = self::$docCache[$cacheKey];
 
-        return response($yaml, 200, [
-            'Content-Type' => 'application/x-yaml',
+        return response($content, 200, [
+            'Content-Type' => $contentType,
         ]);
     }
 

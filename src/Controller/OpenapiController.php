@@ -18,6 +18,7 @@ use WebmanTech\Swagger\RouteAnnotation\Processors\MergeClassLevelInfo;
 use WebmanTech\Swagger\RouteAnnotation\Processors\SchemaQueryParameter;
 use WebmanTech\Swagger\RouteAnnotation\Processors\SchemaRequest;
 use WebmanTech\Swagger\RouteAnnotation\Processors\SchemaResponse;
+use WebmanTech\Swagger\RouteAnnotation\Processors\SortComponents;
 
 class OpenapiController
 {
@@ -107,6 +108,7 @@ class OpenapiController
                         ->add(new SchemaResponse())
                         ->add(new AppendResponse())
                         ->add(new CleanRouteX()) // 清理路由注解
+                        ->add(new SortComponents()) // 排序组件
                     ;
                 })
                 ->generate(

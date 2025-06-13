@@ -2,7 +2,6 @@
 
 namespace WebmanTech\Swagger\Controller;
 
-use Doctrine\Common\Annotations\Annotation;
 use OpenApi\Annotations as OA;
 use OpenApi\Generator;
 use OpenApi\Pipeline;
@@ -22,32 +21,20 @@ use WebmanTech\Swagger\RouteAnnotation\Processors\SchemaResponse;
 
 class OpenapiController
 {
-    private readonly bool $canUseAnnotations;
-    private readonly bool $canUseAttributes;
     private readonly array $requiredElements;
 
     public function __construct()
     {
-        $this->canUseAnnotations = class_exists(Annotation::class);
-        $this->canUseAttributes = class_exists(\Attribute::class);
-
-        if (!$this->canUseAnnotations && !$this->canUseAttributes) {
-            throw new \Exception('Please install doctrine/annotations or use php>=8.0');
-        }
-
         $this->requiredElements = [
-            'info' => $this->canUseAnnotations ? __DIR__ . '/RequiredElementsAnnotations/Info' : __DIR__ . '/RequiredElementsAttributes/Info',
-            'pathItem' => $this->canUseAnnotations ? __DIR__ . '/RequiredElementsAnnotations/PathItem' : __DIR__ . '/RequiredElementsAttributes/PathItem',
+            'info' => __DIR__ . '/RequiredElementsAttributes/Info',
+            'pathItem' => __DIR__ . '/RequiredElementsAttributes/PathItem',
         ];
     }
 
     /**
-     * @param string $docRoute
-     * @param array|ConfigSwaggerUiDTO $config
-     * @return Response
      * @throws Throwable
      */
-    public function swaggerUI(string $docRoute, $config = []): Response
+    public function swaggerUI(string $docRoute, ConfigSwaggerUiDTO|array $config = []): Response
     {
         if (is_array($config)) {
             $config = new ConfigSwaggerUiDTO($config);
@@ -63,11 +50,9 @@ class OpenapiController
     private static array $docCache = [];
 
     /**
-     * @param array|ConfigOpenapiDocDTO $config
-     * @return Response
      * @throws Throwable
      */
-    public function openapiDoc($config = []): Response
+    public function openapiDoc(ConfigOpenapiDocDTO|array $config = []): Response
     {
         if (is_array($config)) {
             $config = new ConfigOpenapiDocDTO($config);
@@ -93,13 +78,9 @@ class OpenapiController
 
     /**
      * 扫描并生成 yaml
-     * @param string|array $scanPath
-     * @param array|null|string $scanExclude
-     * @param int $errorCount
-     * @return OA\OpenApi
      * @throws Throwable
      */
-    private function scanAndGenerateOpenapi($scanPath, $scanExclude = null, int $errorCount = 0): OA\OpenApi
+    private function scanAndGenerateOpenapi(array|string $scanPath, array|string|null $scanExclude = null, int $errorCount = 0): OA\OpenApi
     {
         $requiredElements = $this->requiredElements;
 

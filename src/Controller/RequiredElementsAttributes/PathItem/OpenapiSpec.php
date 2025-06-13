@@ -8,8 +8,8 @@ class OpenapiSpec
 {
     #[OA\Get(
         path: '/example',
-        summary: 'Zero configuration example',
         description: 'Will be deleted automatically when adding a new api interface',
+        summary: 'Zero configuration example',
         responses: [
             new OA\Response(response: 200, description: 'The data')
         ],

@@ -35,6 +35,8 @@ class MergeClassLevelInfo
         if (Generator::isDefault($operation->tags)) {
             $operation->tags = [];
         }
-        $operation->tags[] = $tagParent->name;
+        if (!in_array($tagParent->name, $operation->tags, true)) {
+            $operation->tags[] = $tagParent->name;
+        }
     }
 }

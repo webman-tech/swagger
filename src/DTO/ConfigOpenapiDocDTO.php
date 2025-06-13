@@ -51,15 +51,15 @@ class ConfigOpenapiDocDTO extends BaseDTO
 
     public function generateWithFormat(OpenApi $openApi): array
     {
-        return [
-            'yaml' => [
-                $openApi->toYaml(),
-                'application/x-yaml',
-            ],
+        return match ($this->format) {
             'json' => [
                 $openApi->toJson(),
                 'application/json',
             ],
-        ][$this->format];
+            default => [
+                $openApi->toYaml(),
+                'application/x-yaml',
+            ],
+        };
     }
 }

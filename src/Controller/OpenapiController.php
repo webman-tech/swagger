@@ -15,6 +15,7 @@ use WebmanTech\Swagger\Helper\JsExpression;
 use WebmanTech\Swagger\RouteAnnotation\Analysers\ReflectionAnalyser;
 use WebmanTech\Swagger\RouteAnnotation\Processors\AppendResponse;
 use WebmanTech\Swagger\RouteAnnotation\Processors\CleanRouteX;
+use WebmanTech\Swagger\RouteAnnotation\Processors\MergeClassLevelInfo;
 use WebmanTech\Swagger\RouteAnnotation\Processors\SchemaQueryParameter;
 use WebmanTech\Swagger\RouteAnnotation\Processors\SchemaRequest;
 use WebmanTech\Swagger\RouteAnnotation\Processors\SchemaResponse;
@@ -119,6 +120,7 @@ class OpenapiController
                 ->setAnalyser(new ReflectionAnalyser())
                 ->withProcessorPipeline(function (Pipeline $pipeline): void {
                     $pipeline
+                        ->add(new MergeClassLevelInfo())
                         ->add(new SchemaQueryParameter())
                         ->add(new SchemaRequest())
                         ->add(new SchemaResponse())

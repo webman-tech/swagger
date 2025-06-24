@@ -19,7 +19,7 @@ use WebmanTech\Swagger\DTO\SchemaConstants;
  */
 final class SchemaRequest
 {
-    const REF = SchemaConstants::X_SCHEMA_REQUEST;
+    private const REF = SchemaConstants::X_SCHEMA_REQUEST;
 
     private Analysis $analysis;
 
@@ -38,14 +38,22 @@ final class SchemaRequest
                 if (!is_array($value)) {
                     throw new \InvalidArgumentException(sprintf('Value of `x.%s` must be a string or array of strings', self::REF));
                 }
-
-                foreach ($value as $class) {
+                foreach ($value as $classWithMethod) {
+                    $class = $classWithMethod;
+                    $method = null;
+                    if (str_contains($classWithMethod, '@')) {
+                        [$class, $method] = explode('@', $classWithMethod);
+                    }
                     $schema = $analysis->getSchemaForSource($class);
                     if (!$schema instanceof AnSchema) {
                         throw new \InvalidArgumentException(sprintf('Value of `x.%s.%s` must be a schema reference', self::REF, $class));
                     }
 
                     $this->exapand($operation, $schema);
+
+                    if ($method) {
+                        $this->add2responseXSchemaResponse($operation, $class, $method);
+                    }
                 }
 
                 $this->cleanUp($operation);
@@ -166,6 +174,27 @@ final class SchemaRequest
             $schema->properties = [];
         }
         $schema->properties[] = $property;
+    }
+
+    private function add2responseXSchemaResponse(AnOperation $operation, string $class, string $method): void
+    {
+        if (Generator::isDefault($operation->x)) {
+            $operation->x = [];
+        }
+        $responseXSchemaResponseKey = SchemaResponse::REF;
+        if (isset($operation->x[$responseXSchemaResponseKey])) {
+            // 如果已经定义过，则不覆盖
+            return;
+        }
+
+        $reflectionClass = new \ReflectionClass($class);
+        $reflectionMethod = $reflectionClass->getMethod($method);
+        $reflectionReturnType = $reflectionMethod->getReturnType();
+        if (!$reflectionReturnType instanceof \ReflectionNamedType) {
+            throw new \InvalidArgumentException("{$class}@{$method} 必须定义返回类型，且唯一");
+        }
+
+        $operation->x[$responseXSchemaResponseKey] = '\\' . $reflectionReturnType->getName();
     }
 
     private function cleanUp(AnOperation $operation): void

@@ -20,7 +20,7 @@ use WebmanTech\Swagger\DTO\SchemaConstants;
  */
 final class SchemaResponse
 {
-    const REF = SchemaConstants::X_SCHEMA_RESPONSE;
+    public const REF = SchemaConstants::X_SCHEMA_RESPONSE;
 
     private Analysis $analysis;
 

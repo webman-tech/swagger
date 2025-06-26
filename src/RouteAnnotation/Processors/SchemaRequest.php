@@ -90,9 +90,14 @@ final class SchemaRequest
             }
             if ($propertyIn === null) {
                 $propertyIn = match ($operation->method) {
-                    'get', 'head', 'options' => SchemaConstants::X_PROPERTY_IN_PATH,
+                    'get', 'head', 'options' => SchemaConstants::X_PROPERTY_IN_QUERY,
                     default => SchemaConstants::X_PROPERTY_IN_JSON,
                 };
+            }
+            if ($propertyIn === SchemaConstants::X_PROPERTY_IN_GET) {
+                $propertyIn = SchemaConstants::X_PROPERTY_IN_QUERY;
+            } elseif ($propertyIn === SchemaConstants::X_PROPERTY_IN_POST) {
+                $propertyIn = SchemaConstants::X_PROPERTY_IN_JSON;
             }
 
             $isNullable = Generator::isDefault($property->nullable) ? false : $property->nullable;
@@ -194,7 +199,7 @@ final class SchemaRequest
             throw new \InvalidArgumentException("{$class}@{$method} 必须定义返回类型，且唯一");
         }
 
-        $operation->x[$responseXSchemaResponseKey] = '\\' . $reflectionReturnType->getName();
+        $operation->x[$responseXSchemaResponseKey][200] = '\\' . $reflectionReturnType->getName();
     }
 
     private function cleanUp(AnOperation $operation): void

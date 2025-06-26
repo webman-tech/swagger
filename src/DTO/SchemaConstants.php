@@ -55,4 +55,6 @@ class SchemaConstants
     public const X_PROPERTY_IN_HEADER = 'header';
     public const X_PROPERTY_IN_COOKIE = 'cookie';
     public const X_PROPERTY_IN_BODY = 'body';
+    public const X_PROPERTY_IN_POST = 'post'; // alias -> json
+    public const X_PROPERTY_IN_GET = 'get'; // alias -> query
 }

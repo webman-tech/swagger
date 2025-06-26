@@ -47,6 +47,10 @@ class SchemaConstants
      */
     public const X_PROPERTY_IN = 'in';
     /**
+     * OA\Property 的 x 中使用的 required 参数名
+     */
+    public const X_PROPERTY_REQUIRED = 'required';
+    /**
      * OA\Property 的 x.in 的支持的值
      */
     public const X_PROPERTY_IN_JSON = 'json';

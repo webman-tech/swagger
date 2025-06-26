@@ -6,6 +6,7 @@ use OpenApi\Analysis;
 use OpenApi\Annotations\Header as AnHeader;
 use OpenApi\Annotations\MediaType as AnMediaType;
 use OpenApi\Annotations\Operation as AnOperation;
+use OpenApi\Annotations\Property as AnProperty;
 use OpenApi\Annotations\Response as AnResponse;
 use OpenApi\Annotations\Schema as AnSchema;
 use OpenApi\Attributes\Header;
@@ -77,17 +78,42 @@ final class SchemaResponse
         }
 
         $response = $this->getResponse($operation, $statusCode);
+        $schemaRequired = Generator::isDefault($schema->required) ? [] : $schema->required;
 
         foreach ($schema->properties as $property) {
             $propertyIn = null;
-            if (!Generator::isDefault($property->x) && array_key_exists(SchemaConstants::X_PROPERTY_IN, $property->x)) {
-                $propertyIn = $property->x[SchemaConstants::X_PROPERTY_IN];
+            $propertyRequired = null;
+            if (!Generator::isDefault($property->x)) {
+                if (array_key_exists(SchemaConstants::X_PROPERTY_IN, $property->x)) {
+                    $propertyIn = (string)$property->x[SchemaConstants::X_PROPERTY_IN];
+                    //unset($property->x[SchemaConstants::X_PROPERTY_IN]); // 不能清理，有些基础类会复用
+                }
+                if (array_key_exists(SchemaConstants::X_PROPERTY_REQUIRED, $property->x)) {
+                    $propertyRequired = (bool)$property->x[SchemaConstants::X_PROPERTY_REQUIRED];
+                    //unset($property->x[SchemaConstants::X_PROPERTY_REQUIRED]); // 不能清理，有些基础类会复用
+                }
+                if (!$property->x) {
+                    $property->x = Generator::UNDEFINED;
+                }
             }
+
             if ($propertyIn === null) {
                 $propertyIn = SchemaConstants::X_PROPERTY_IN_JSON;
             }
 
-            $isNullable = Generator::isDefault($property->nullable) ? false : $property->nullable;
+            if ($propertyRequired !== null) {
+                // 根据 property 上定义的 x.required ，补全或者提出掉 schema 上的 required
+                $isInSchemaRequired = in_array($property->property, $schemaRequired, true);
+                if ($propertyRequired && !$isInSchemaRequired) {
+                    $schemaRequired[] = $property->property;
+                }
+                if (!$propertyRequired && $isInSchemaRequired) {
+                    $schemaRequired = array_filter($schemaRequired, fn($item) => $item !== $property->property);
+                }
+            }
+
+            $isRequired = in_array($property->property, $schemaRequired, true);
+            $isNullable = Generator::isDefault($property->nullable) ? null : $property->nullable;
             $description = Generator::isDefault($property->description) ? null : $property->description;
 
             if ($propertyIn === SchemaConstants::X_PROPERTY_IN_HEADER) {
@@ -106,7 +132,13 @@ final class SchemaResponse
 
                 $this->add2headers($response, $header);
             } elseif ($propertyIn === SchemaConstants::X_PROPERTY_IN_JSON) {
-                $this->add2responseBodyJson($response, $property);
+                $schemaNew = $this->add2responseBodyJson($response, $property);
+                if ($isRequired) {
+                    if (Generator::isDefault($schemaNew->required)) {
+                        $schemaNew->required = [];
+                    }
+                    $schemaNew->required[] = $property->property;
+                }
             } elseif ($propertyIn === SchemaConstants::X_PROPERTY_IN_BODY) {
                 $schema = new Schema(
                     description: $description,
@@ -158,7 +190,7 @@ final class SchemaResponse
         $response->headers[] = $header;
     }
 
-    private function add2responseBodyJson(AnResponse $response, AnSchema $property): void
+    private function add2responseBodyJson(AnResponse $response, AnProperty $property): AnSchema
     {
         $mediaType = $this->getResponseMediaType($response, 'application/json');
         if (Generator::isDefault($mediaType->schema)) {
@@ -169,6 +201,8 @@ final class SchemaResponse
             $schema->properties = [];
         }
         $schema->properties[] = $property;
+
+        return $schema;
     }
 
     private function cleanUp(AnOperation $operation): void

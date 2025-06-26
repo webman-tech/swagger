@@ -6,6 +6,7 @@ use OpenApi\Analysis;
 use OpenApi\Annotations\MediaType as AnMediaType;
 use OpenApi\Annotations\Operation as AnOperation;
 use OpenApi\Annotations\Parameter as AnParameter;
+use OpenApi\Annotations\Property as AnProperty;
 use OpenApi\Annotations\Schema as AnSchema;
 use OpenApi\Attributes\MediaType;
 use OpenApi\Attributes\Parameter;
@@ -83,11 +84,25 @@ final class SchemaRequest
             return;
         }
 
+        $schemaRequired = Generator::isDefault($schema->required) ? [] : $schema->required;
+
         foreach ($schema->properties as $property) {
             $propertyIn = null;
-            if (!Generator::isDefault($property->x) && array_key_exists(SchemaConstants::X_PROPERTY_IN, $property->x)) {
-                $propertyIn = $property->x[SchemaConstants::X_PROPERTY_IN];
+            $propertyRequired = null;
+            if (!Generator::isDefault($property->x)) {
+                if (array_key_exists(SchemaConstants::X_PROPERTY_IN, $property->x)) {
+                    $propertyIn = (string)$property->x[SchemaConstants::X_PROPERTY_IN];
+                    //unset($property->x[SchemaConstants::X_PROPERTY_IN]); // 不能清理，有些基础类会复用
+                }
+                if (array_key_exists(SchemaConstants::X_PROPERTY_REQUIRED, $property->x)) {
+                    $propertyRequired = (bool)$property->x[SchemaConstants::X_PROPERTY_REQUIRED];
+                    //unset($property->x[SchemaConstants::X_PROPERTY_REQUIRED]); // 不能清理，有些基础类会复用
+                }
+                if (!$property->x) {
+                    $property->x = Generator::UNDEFINED;
+                }
             }
+
             if ($propertyIn === null) {
                 $propertyIn = match ($operation->method) {
                     'get', 'head', 'options' => SchemaConstants::X_PROPERTY_IN_QUERY,
@@ -100,7 +115,19 @@ final class SchemaRequest
                 $propertyIn = SchemaConstants::X_PROPERTY_IN_JSON;
             }
 
-            $isNullable = Generator::isDefault($property->nullable) ? false : $property->nullable;
+            if ($propertyRequired !== null) {
+                // 根据 property 上定义的 x.required ，补全或者提出掉 schema 上的 required
+                $isInSchemaRequired = in_array($property->property, $schemaRequired, true);
+                if ($propertyRequired && !$isInSchemaRequired) {
+                    $schemaRequired[] = $property->property;
+                }
+                if (!$propertyRequired && $isInSchemaRequired) {
+                    $schemaRequired = array_filter($schemaRequired, fn($item) => $item !== $property->property);
+                }
+            }
+
+            $isRequired = in_array($property->property, $schemaRequired, true);
+            $isNullable = Generator::isDefault($property->nullable) ? null : $property->nullable;
             $description = Generator::isDefault($property->description) ? null : $property->description;
 
             if (in_array($propertyIn, [
@@ -111,7 +138,7 @@ final class SchemaRequest
             ], true)) {
                 $schemaNew = new Schema(
                     type: Generator::isDefault($property->format) ? $property->type : $property->format,
-                    nullable: $isNullable
+                    nullable: $isNullable,
                 );
                 $schemaNew->_context = $operation->_context; // inherit context from operation, required to pretend to be a parameter
 
@@ -119,7 +146,7 @@ final class SchemaRequest
                     name: $property->property,
                     description: $description,
                     in: $propertyIn,
-                    required: !$isNullable,
+                    required: $isRequired,
                     schema: $schemaNew,
                     example: $property->example,
                 );
@@ -127,9 +154,15 @@ final class SchemaRequest
 
                 $this->add2parameters($operation, $parameter);
             } elseif ($propertyIn === SchemaConstants::X_PROPERTY_IN_JSON) {
-                $this->add2requestBodyJson($operation, $property);
+                $schemaNew = $this->add2requestBodyJson($operation, $property);
+                if ($isRequired) {
+                    if (Generator::isDefault($schemaNew->required)) {
+                        $schemaNew->required = [];
+                    }
+                    $schemaNew->required[] = $property->property;
+                }
             } elseif ($propertyIn === SchemaConstants::X_PROPERTY_IN_BODY) {
-                $schema = new Schema(
+                $schemaNew = new Schema(
                     description: $description,
                     type: 'string',
                     format: 'binary',
@@ -137,10 +170,13 @@ final class SchemaRequest
                 );
 
                 $mediaType = $this->getRequestMediaType($operation, 'application/octect-stream');
-                $mediaType->schema = $schema;
+                $mediaType->schema = $schemaNew;
             } else {
                 throw new \InvalidArgumentException(sprintf('Not support [%s] in `x.in`, class: [%s], property: [%s]', $propertyIn, $property->_context->class, $property->property));
             }
+
+            // 将重新修改过的 required 信息补全到原 schema 上
+            $schema->required = empty($schemaRequired) ? Generator::UNDEFINED : $schemaRequired;
         }
     }
 
@@ -168,7 +204,7 @@ final class SchemaRequest
         return $operation->requestBody->content[$mediaType];
     }
 
-    private function add2requestBodyJson(AnOperation $operation, AnSchema $property): void
+    private function add2requestBodyJson(AnOperation $operation, AnProperty $property): AnSchema
     {
         $mediaType = $this->getRequestMediaType($operation, 'application/json');
         if (Generator::isDefault($mediaType->schema)) {
@@ -179,6 +215,8 @@ final class SchemaRequest
             $schema->properties = [];
         }
         $schema->properties[] = $property;
+
+        return $schema;
     }
 
     private function add2responseXSchemaResponse(AnOperation $operation, string $class, string $method): void

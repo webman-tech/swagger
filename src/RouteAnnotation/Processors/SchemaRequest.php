@@ -14,12 +14,15 @@ use OpenApi\Attributes\RequestBody;
 use OpenApi\Attributes\Schema;
 use OpenApi\Generator;
 use WebmanTech\Swagger\DTO\SchemaConstants;
+use WebmanTech\Swagger\RouteAnnotation\Processors\Traits\HasPropertyX;
 
 /**
  * 将定义的 schema 转到 request 的 parameters 或 requestBody 上
  */
 final class SchemaRequest
 {
+    use HasPropertyX;
+
     private const REF = SchemaConstants::X_SCHEMA_REQUEST;
 
     private Analysis $analysis;
@@ -50,7 +53,7 @@ final class SchemaRequest
                         throw new \InvalidArgumentException(sprintf('Value of `x.%s.%s` must be a schema reference', self::REF, $class));
                     }
 
-                    $this->exapand($operation, $schema);
+                    $this->expand($operation, $schema);
 
                     if ($method) {
                         $this->add2responseXSchemaResponse($operation, $class, $method);
@@ -62,12 +65,12 @@ final class SchemaRequest
         }
     }
 
-    private function exapand(AnOperation $operation, AnSchema $schema): void
+    private function expand(AnOperation $operation, AnSchema $schema): void
     {
         if (!Generator::isDefault($schema->allOf)) {
             // support allOf
             foreach ($schema->allOf as $itemSchema) {
-                $this->exapand($operation, $itemSchema);
+                $this->expand($operation, $itemSchema);
             }
         }
 
@@ -77,7 +80,7 @@ final class SchemaRequest
             if (!$refSchema instanceof AnSchema) {
                 throw new \InvalidArgumentException('ref must be a schema reference');
             }
-            $this->exapand($operation, $refSchema);
+            $this->expand($operation, $refSchema);
         }
 
         if (Generator::isDefault($schema->properties) || !$schema->properties) {
@@ -87,21 +90,8 @@ final class SchemaRequest
         $schemaRequired = Generator::isDefault($schema->required) ? [] : $schema->required;
 
         foreach ($schema->properties as $property) {
-            $propertyIn = null;
-            $propertyRequired = null;
-            if (!Generator::isDefault($property->x)) {
-                if (array_key_exists(SchemaConstants::X_PROPERTY_IN, $property->x)) {
-                    $propertyIn = (string)$property->x[SchemaConstants::X_PROPERTY_IN];
-                    //unset($property->x[SchemaConstants::X_PROPERTY_IN]); // 不能清理，有些基础类会复用
-                }
-                if (array_key_exists(SchemaConstants::X_PROPERTY_REQUIRED, $property->x)) {
-                    $propertyRequired = (bool)$property->x[SchemaConstants::X_PROPERTY_REQUIRED];
-                    //unset($property->x[SchemaConstants::X_PROPERTY_REQUIRED]); // 不能清理，有些基础类会复用
-                }
-                if (!$property->x) {
-                    $property->x = Generator::UNDEFINED;
-                }
-            }
+            $propertyIn = $this->getPropertyXValue($property, SchemaConstants::X_PROPERTY_IN);
+            $propertyRequired = $this->getPropertyXValue($property, SchemaConstants::X_PROPERTY_REQUIRED);
 
             if ($propertyIn === null) {
                 $propertyIn = match ($operation->method) {
@@ -115,16 +105,7 @@ final class SchemaRequest
                 $propertyIn = SchemaConstants::X_PROPERTY_IN_JSON;
             }
 
-            if ($propertyRequired !== null) {
-                // 根据 property 上定义的 x.required ，补全或者提出掉 schema 上的 required
-                $isInSchemaRequired = in_array($property->property, $schemaRequired, true);
-                if ($propertyRequired && !$isInSchemaRequired) {
-                    $schemaRequired[] = $property->property;
-                }
-                if (!$propertyRequired && $isInSchemaRequired) {
-                    $schemaRequired = array_filter($schemaRequired, fn($item) => $item !== $property->property);
-                }
-            }
+            $schemaRequired = $this->fixSchemaRequiredWithPropertyRequired($property, $schemaRequired, $propertyRequired);
 
             $isRequired = in_array($property->property, $schemaRequired, true);
             $isNullable = Generator::isDefault($property->nullable) ? null : $property->nullable;

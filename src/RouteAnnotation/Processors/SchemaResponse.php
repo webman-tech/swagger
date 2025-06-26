@@ -15,12 +15,15 @@ use OpenApi\Attributes\Response;
 use OpenApi\Attributes\Schema;
 use OpenApi\Generator;
 use WebmanTech\Swagger\DTO\SchemaConstants;
+use WebmanTech\Swagger\RouteAnnotation\Processors\Traits\HasPropertyX;
 
 /**
  * 将定义的 schema 转为 response 上
  */
 final class SchemaResponse
 {
+    use HasPropertyX;
+
     public const REF = SchemaConstants::X_SCHEMA_RESPONSE;
 
     private Analysis $analysis;
@@ -47,7 +50,7 @@ final class SchemaResponse
                         throw new \InvalidArgumentException(sprintf('Value of `x.%s.%s` must be a schema reference', self::REF, $class));
                     }
 
-                    $this->exapand($operation, $statusCode, $schema);
+                    $this->expand($operation, $statusCode, $schema);
                 }
 
                 $this->cleanUp($operation);
@@ -55,12 +58,12 @@ final class SchemaResponse
         }
     }
 
-    private function exapand(AnOperation $operation, int $statusCode, AnSchema $schema): void
+    private function expand(AnOperation $operation, int $statusCode, AnSchema $schema): void
     {
         if (!Generator::isDefault($schema->allOf)) {
             // support allOf
             foreach ($schema->allOf as $itemSchema) {
-                $this->exapand($operation, $statusCode, $itemSchema);
+                $this->expand($operation, $statusCode, $itemSchema);
             }
         }
 
@@ -70,7 +73,7 @@ final class SchemaResponse
             if (!$refSchema instanceof AnSchema) {
                 throw new \InvalidArgumentException('ref must be a schema reference');
             }
-            $this->exapand($operation, $statusCode, $refSchema);
+            $this->expand($operation, $statusCode, $refSchema);
         }
 
         if (Generator::isDefault($schema->properties) || !$schema->properties) {
@@ -81,36 +84,14 @@ final class SchemaResponse
         $schemaRequired = Generator::isDefault($schema->required) ? [] : $schema->required;
 
         foreach ($schema->properties as $property) {
-            $propertyIn = null;
-            $propertyRequired = null;
-            if (!Generator::isDefault($property->x)) {
-                if (array_key_exists(SchemaConstants::X_PROPERTY_IN, $property->x)) {
-                    $propertyIn = (string)$property->x[SchemaConstants::X_PROPERTY_IN];
-                    //unset($property->x[SchemaConstants::X_PROPERTY_IN]); // 不能清理，有些基础类会复用
-                }
-                if (array_key_exists(SchemaConstants::X_PROPERTY_REQUIRED, $property->x)) {
-                    $propertyRequired = (bool)$property->x[SchemaConstants::X_PROPERTY_REQUIRED];
-                    //unset($property->x[SchemaConstants::X_PROPERTY_REQUIRED]); // 不能清理，有些基础类会复用
-                }
-                if (!$property->x) {
-                    $property->x = Generator::UNDEFINED;
-                }
-            }
+            $propertyIn = $this->getPropertyXValue($property, SchemaConstants::X_PROPERTY_IN);
+            $propertyRequired = $this->getPropertyXValue($property, SchemaConstants::X_PROPERTY_REQUIRED);
 
             if ($propertyIn === null) {
                 $propertyIn = SchemaConstants::X_PROPERTY_IN_JSON;
             }
 
-            if ($propertyRequired !== null) {
-                // 根据 property 上定义的 x.required ，补全或者提出掉 schema 上的 required
-                $isInSchemaRequired = in_array($property->property, $schemaRequired, true);
-                if ($propertyRequired && !$isInSchemaRequired) {
-                    $schemaRequired[] = $property->property;
-                }
-                if (!$propertyRequired && $isInSchemaRequired) {
-                    $schemaRequired = array_filter($schemaRequired, fn($item) => $item !== $property->property);
-                }
-            }
+            $schemaRequired = $this->fixSchemaRequiredWithPropertyRequired($property, $schemaRequired, $propertyRequired);
 
             $isRequired = in_array($property->property, $schemaRequired, true);
             $isNullable = Generator::isDefault($property->nullable) ? null : $property->nullable;
@@ -140,7 +121,7 @@ final class SchemaResponse
                     $schemaNew->required[] = $property->property;
                 }
             } elseif ($propertyIn === SchemaConstants::X_PROPERTY_IN_BODY) {
-                $schema = new Schema(
+                $schemaNew = new Schema(
                     description: $description,
                     type: 'string',
                     format: 'binary',
@@ -148,7 +129,7 @@ final class SchemaResponse
                 );
 
                 $mediaType = $this->getResponseMediaType($response, 'application/octect-stream');
-                $mediaType->schema = $schema;
+                $mediaType->schema = $schemaNew;
             } else {
                 throw new \InvalidArgumentException(sprintf('Not support [%s] in `x.in`, class: [%s], property: [%s]', $propertyIn, $property->_context->class, $property->property));
             }

@@ -117,10 +117,16 @@ final class SchemaRequest
                 SchemaConstants::X_PROPERTY_IN_PATH,
                 SchemaConstants::X_PROPERTY_IN_QUERY,
             ], true)) {
-                $schemaNew = new Schema(
-                    type: Generator::isDefault($property->format) ? $property->type : $property->format,
+                /*$schemaNew = new Schema(
+                    type: $property->type,
+                    format: $property->format,
+                    default: $property->default,
+                    maximum: $property->maximum,
+                    minimum: $property->minimum,
+                    enum: $property->enum,
                     nullable: $isNullable,
-                );
+                );*/
+                $schemaNew = $this->renewSchemaWithProperty($property);
                 $schemaNew->_context = $operation->_context; // inherit context from operation, required to pretend to be a parameter
 
                 $parameter = new Parameter(

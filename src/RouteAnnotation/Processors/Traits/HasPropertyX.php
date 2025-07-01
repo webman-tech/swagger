@@ -5,6 +5,8 @@ namespace WebmanTech\Swagger\RouteAnnotation\Processors\Traits;
 use OpenApi\Annotations\Property as AnProperty;
 use OpenApi\Attributes\Schema;
 use OpenApi\Generator;
+use WebmanTech\DTO\BaseDTO;
+use WebmanTech\DTO\Reflection\ReflectionReaderFactory;
 
 trait HasPropertyX
 {
@@ -57,5 +59,24 @@ trait HasPropertyX
             nullable: Generator::isDefault($schema->nullable) ? null : $schema->nullable,
             additionalProperties: Generator::isDefault($schema->additionalProperties) ? null : $schema->additionalProperties,
         );
+    }
+
+    private function fillPropertyWithDTO(AnProperty $property): void
+    {
+        $className = '\\' . $property->_context->namespace . '\\' . $property->_context->class;
+        if (!is_a($className, BaseDTO::class, true)) {
+            return;
+        }
+        $validationRules = ReflectionReaderFactory::fromClass($className)->getPublicPropertyValidationRules($property->property);
+        if (!$validationRules) {
+            return;
+        }
+        if ($validationRules->min) {
+            $property->minimum = $validationRules->min;
+        }
+        if ($validationRules->max) {
+            $property->maximum = $validationRules->max;
+        }
+        // TODO more
     }
 }

@@ -5,7 +5,7 @@ namespace WebmanTech\Swagger\DTO;
 /**
  * 用于定义 schema 用到的常量
  */
-class SchemaConstants
+final class SchemaConstants
 {
     /**
      * 命名路由
@@ -22,11 +22,6 @@ class SchemaConstants
      * @see self::getRouteMiddlewares()
      */
     public const X_MIDDLEWARE = 'route-middleware';
-    /**
-     * schema 转 parameters
-     * 建议使用 X_SCHEMA_REQUEST 代替，更加智能
-     */
-    public const X_SCHEMA_TO_PARAMETERS = 'schema-to-parameters';
 
     /**
      * 命名路由的前缀
@@ -41,15 +36,15 @@ class SchemaConstants
      * 将 schema 转到 response 上
      */
     public const X_SCHEMA_RESPONSE = 'schema-response';
+    /**
+     * @deprecated 使用 X_SCHEMA_REQUEST 代替
+     */
+    public const X_SCHEMA_TO_PARAMETERS = self::X_SCHEMA_REQUEST;
 
     /**
      * OA\Property 的 x 中使用的 in 参数名
      */
     public const X_PROPERTY_IN = 'in';
-    /**
-     * OA\Property 的 x 中使用的 required 参数名
-     */
-    public const X_PROPERTY_REQUIRED = 'required';
     /**
      * OA\Property 的 x.in 的支持的值
      */

@@ -2,32 +2,26 @@
 
 namespace WebmanTech\Swagger\DTO;
 
+use Closure;
 use OpenApi\Annotations\OpenApi;
-use WebmanTech\Swagger\Helper\ArrayHelper;
+use WebmanTech\DTO\BaseConfigDTO;
 use WebmanTech\Swagger\Helper\ConfigHelper;
 
-/**
- * @property string|array $scan_path 扫描的目录
- * @property null|array $scan_exclude 扫描忽略的
- * @property null|callable $modify 修改 $openapi 对象
- * @property null|string|callable $cache_key 缓存用的 key，当注册不同实例时，需要指定不同的 key，或者做热更新用
- * @property string $format yaml/json
- */
-class ConfigOpenapiDocDTO extends BaseDTO
+final class ConfigOpenapiDocDTO extends BaseConfigDTO
 {
-    protected function initData(): void
+    public function __construct(
+        public string|array        $scan_path = [], // 扫描的目录
+        public null|array          $scan_exclude = null, // 扫描忽略的
+        public null|Closure        $modify = null, // 修改 $openapi 对象
+        public null|string|Closure $cache_key = null, // 缓存用的 key，当注册不同实例时，需要指定不同的 key，或者做热更新用
+        public string              $format = 'yaml', // yaml/json
+    )
     {
-        $this->_data = ArrayHelper::merge(
-            [
-                'scan_path' => [],
-                'scan_exclude' => null,
-                'modify' => null,
-                'cache_key' => null,
-                'format' => 'yaml', // yaml/json
-            ],
-            ConfigHelper::get('app.openapi_doc', []),
-            $this->_data
-        );
+    }
+
+    protected static function getAppConfig(): array
+    {
+        return ConfigHelper::get('app.openapi_doc', []);
     }
 
     public function getCacheKey(): string
@@ -35,7 +29,7 @@ class ConfigOpenapiDocDTO extends BaseDTO
         $cacheKey = null;
         if (is_string($this->cache_key)) {
             $cacheKey = $this->cache_key;
-        } elseif (is_callable($this->cache_key)) {
+        } elseif ($this->cache_key instanceof Closure) {
             $cacheKey = call_user_func($this->cache_key);
         }
 
@@ -44,7 +38,7 @@ class ConfigOpenapiDocDTO extends BaseDTO
 
     public function applyModify(OpenApi $openapi): void
     {
-        if (is_callable($this->modify)) {
+        if ($this->modify instanceof Closure) {
             call_user_func($this->modify, $openapi);
         }
     }

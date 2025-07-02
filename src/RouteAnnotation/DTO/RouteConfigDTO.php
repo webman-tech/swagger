@@ -4,49 +4,20 @@ namespace WebmanTech\Swagger\RouteAnnotation\DTO;
 
 use InvalidArgumentException;
 use support\Container;
-use WebmanTech\Swagger\DTO\BaseDTO;
 use WebmanTech\Swagger\DTO\SchemaConstants;
 
-/**
- * @property string $desc
- * @property string $method
- * @property string $path
- * @property string $controller
- * @property string $action
- * @property null|string $name
- * @property null|array<int, mixed>|string $middlewares
- */
-class RouteConfigDTO extends BaseDTO
+final class RouteConfigDTO
 {
-    /**
-     * @deprecated
-     */
-    public const X_NAME = SchemaConstants::X_NAME;
-    /**
-     * @deprecated
-     */
-    public const X_PATH = SchemaConstants::X_PATH;
-    /**
-     * @deprecated
-     */
-    public const X_MIDDLEWARE = SchemaConstants::X_MIDDLEWARE;
-
-    /**
-     * @deprecated
-     */
-    public const MIDDLEWARE_NAMED_PREFIX = SchemaConstants::MIDDLEWARE_NAMED_PREFIX;
-
-    public function initData(): void
+    public function __construct(
+        public string            $desc = '',
+        public string            $method = '',
+        public string            $path = '',
+        public string            $controller = '',
+        public string            $action = '',
+        public null|string       $name = null,
+        public null|string|array $middlewares = null,
+    )
     {
-        $this->_data = array_merge([
-            'desc' => '',
-            'method' => '',
-            'path' => '',
-            'controller' => '',
-            'action' => '',
-            'name' => null,
-            'middlewares' => null,
-        ], $this->_data);
     }
 
     /**
@@ -75,16 +46,12 @@ class RouteConfigDTO extends BaseDTO
         throw new InvalidArgumentException('Invalid middlewares type');
     }
 
-    /**
-     * @param string|array $middleware
-     * @return null|string|array|callable
-     */
-    private function formatMiddleware($middleware)
+    private function formatMiddleware(array|string $middleware): callable|array|string|null
     {
         if (is_string($middleware)) {
             if (str_starts_with($middleware, SchemaConstants::MIDDLEWARE_NAMED_PREFIX)) {
                 $name = substr($middleware, strlen(SchemaConstants::MIDDLEWARE_NAMED_PREFIX));
-                $middleware = static::getNamedMiddleware($name);
+                $middleware = self::getNamedMiddleware($name);
             }
             return $middleware;
         }
@@ -100,21 +67,16 @@ class RouteConfigDTO extends BaseDTO
 
     /**
      * 设置命名的路由中间件
-     * @param string $name
-     * @param string|array|callable $middleware
-     * @return void
      */
-    public static function registerNamedMiddleware(string $name, $middleware): void
+    public static function registerNamedMiddleware(string $name, callable|array|string $middleware): void
     {
         self::$namedMiddlewares[$name] = $middleware;
     }
 
     /**
      * 获取命名的路由中间件
-     * @param string $name
-     * @return null|string|array|callable
      */
-    public static function getNamedMiddleware(string $name)
+    public static function getNamedMiddleware(string $name): callable|array|string|null
     {
         return self::$namedMiddlewares[$name] ?? null;
     }

@@ -197,7 +197,7 @@ class IndexController {
         path: '/xxx',
         summary: '接口说明',
         x: [
-            SchemaConstants::X_SCHEMA_TO_PARAMETERS => TestSchema::class, // 该定义会自动将 Schema 转为 QueryParameters
+            SchemaConstants::X_SCHEMA_REQUEST => TestSchema::class, // 该定义会自动将 Schema 转为 QueryParameters
         ],
     )]
     #[OA\Response(response: 200, description: 'null')]

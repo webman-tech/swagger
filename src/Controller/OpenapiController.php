@@ -3,22 +3,19 @@
 namespace WebmanTech\Swagger\Controller;
 
 use OpenApi\Annotations as OA;
+use OpenApi\Context;
 use OpenApi\Generator;
 use OpenApi\Pipeline;
+use OpenApi\Processors as OAProcessors;
 use Symfony\Component\Finder\Finder;
 use Throwable;
 use Webman\Http\Response;
 use WebmanTech\Swagger\DTO\ConfigOpenapiDocDTO;
 use WebmanTech\Swagger\DTO\ConfigSwaggerUiDTO;
 use WebmanTech\Swagger\Helper\JsExpression;
+use WebmanTech\Swagger\RouteAnnotation\Analysers\Analysis;
 use WebmanTech\Swagger\RouteAnnotation\Analysers\ReflectionAnalyser;
-use WebmanTech\Swagger\RouteAnnotation\Processors\AppendResponse;
-use WebmanTech\Swagger\RouteAnnotation\Processors\CleanRouteX;
-use WebmanTech\Swagger\RouteAnnotation\Processors\MergeClassLevelInfo;
-use WebmanTech\Swagger\RouteAnnotation\Processors\SchemaQueryParameter;
-use WebmanTech\Swagger\RouteAnnotation\Processors\SchemaRequest;
-use WebmanTech\Swagger\RouteAnnotation\Processors\SchemaResponse;
-use WebmanTech\Swagger\RouteAnnotation\Processors\SortComponents;
+use WebmanTech\Swagger\RouteAnnotation\Processors;
 
 class OpenapiController
 {
@@ -37,15 +34,12 @@ class OpenapiController
      */
     public function swaggerUI(string $docRoute, ConfigSwaggerUiDTO|array $config = []): Response
     {
-        if (is_array($config)) {
-            $config = new ConfigSwaggerUiDTO($config);
-        }
+        $config = ConfigSwaggerUiDTO::fromConfig($config);
 
-        $tempData = $config->data;
-        $tempData['ui_config']['url'] = new JsExpression("window.location.pathname + '/{$docRoute}'");
-        $config->data = $tempData;
+        $data = $config->data;
+        $data['ui_config']['url'] = new JsExpression("window.location.pathname + '/{$docRoute}'");
 
-        return raw_view($config->view, $config->data, $config->view_path);
+        return raw_view($config->view, $data, $config->view_path);
     }
 
     private static array $docCache = [];
@@ -55,9 +49,7 @@ class OpenapiController
      */
     public function openapiDoc(ConfigOpenapiDocDTO|array $config = []): Response
     {
-        if (is_array($config)) {
-            $config = new ConfigOpenapiDocDTO($config);
-        }
+        $config = ConfigOpenapiDocDTO::fromConfig($config);
 
         $cacheKey = $config->getCacheKey();
 
@@ -96,28 +88,40 @@ class OpenapiController
             /**
              * @see Generator::scan
              */
-            $openapi = (new Generator())
+            $generator = (new Generator())
                 ->setAliases(Generator::DEFAULT_ALIASES)
                 ->setNamespaces(Generator::DEFAULT_NAMESPACES)
                 ->setAnalyser(new ReflectionAnalyser())
                 ->withProcessorPipeline(function (Pipeline $pipeline): void {
                     $pipeline
-                        ->add(new MergeClassLevelInfo())
-                        ->add(new SchemaQueryParameter())
-                        ->add(new SchemaRequest())
-                        ->add(new SchemaResponse())
-                        ->add(new AppendResponse())
-                        ->add(new CleanRouteX()) // 清理路由注解
-                        ->add(new SortComponents()) // 排序组件
-                    ;
-                })
+                        ->remove(null, function (&$pipe) {
+                            // 替换实现
+                            if ($pipe instanceof OAProcessors\AugmentSchemas) {
+                                $pipe = new Processors\AugmentSchemas();
+                            }
+                            return true;
+                        })
+                        ->add(new Processors\DTOValidationRulesProcessor())
+                        ->add(new Processors\MergeClassInfoProcessor())
+                        ->add(new Processors\XSchemaRequestProcessor())
+                        ->add(new Processors\XSchemaResponseProcessor())
+                        ->add(new Processors\AppendResponseProcessor())
+                        ->add(new Processors\XRouteCleanProcessor())
+                        ->add(new Processors\SortComponentsProcessor());
+                });
+            $analysis = new Analysis([], new Context([
+                'version' => $generator->getVersion(),
+                'logger' => $generator->getLogger(),
+            ]));
+            $openapi = $generator
                 ->generate(
                     Finder::create()
                         ->files()
                         ->followLinks()
                         ->name('*.php')
                         ->in($scanPath)
-                        ->notPath($scanExclude ?? [])
+                        ->notPath($scanExclude ?? []),
+                    $analysis,
                 );
             if ($openapi === null) {
                 throw new \Exception('openapi generate failed');

@@ -2,27 +2,22 @@
 
 namespace WebmanTech\Swagger\DTO;
 
+use WebmanTech\DTO\BaseConfigDTO;
 use WebmanTech\Swagger\Helper\ConfigHelper;
 
-/**
- * @property bool $enable
- * @property bool|null $ip_white_list_intranet 是否允许所有内网访问，为 null 时不检查
- * @property array|null $ip_white_list 允许访问的指定 ip，为 null 时不检查
- * @property array|null $host_white_list 允许访问的指定 host，为 null 时不检查
- */
-class ConfigHostForbiddenDTO extends BaseDTO
+final class ConfigHostForbiddenDTO extends BaseConfigDTO
 {
-    protected function initData(): void
+    public function __construct(
+        public bool  $enable = true,
+        public ?bool $ip_white_list_intranet = true, // 是否允许所有内网访问，为 null 时不检查
+        public array $ip_white_list = [], // 允许访问的指定 ip，为 null 时不检查
+        public array $host_white_list = [], // 允许访问的指定 host，为 null 时不检查
+    )
     {
-        $this->_data = array_merge(
-            [
-                'enable' => true,
-                'ip_white_list_intranet' => true,
-                'ip_white_list' => [],
-                'host_white_list' => [],
-            ],
-            (array)ConfigHelper::get('app.host_forbidden', []),
-            $this->_data
-        );
+    }
+
+    protected static function getAppConfig(): array
+    {
+        return ConfigHelper::get('app.host_forbidden', []);
     }
 }

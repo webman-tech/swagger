@@ -14,15 +14,13 @@ use OpenApi\Attributes\RequestBody;
 use OpenApi\Attributes\Schema;
 use OpenApi\Generator;
 use WebmanTech\Swagger\DTO\SchemaConstants;
-use WebmanTech\Swagger\RouteAnnotation\Processors\Traits\HasPropertyX;
+use WebmanTech\Swagger\Helper\SwaggerHelper;
 
 /**
  * 将定义的 schema 转到 request 的 parameters 或 requestBody 上
  */
-final class SchemaRequest
+final class XSchemaRequestProcessor
 {
-    use HasPropertyX;
-
     private const REF = SchemaConstants::X_SCHEMA_REQUEST;
 
     private Analysis $analysis;
@@ -35,14 +33,10 @@ final class SchemaRequest
 
         foreach ($operations as $operation) {
             if (!Generator::isDefault($operation->x) && array_key_exists(self::REF, $operation->x)) {
-                $value = $operation->x[self::REF];
-                if (is_string($value)) {
-                    $value = [$value];
-                }
-                if (!is_array($value)) {
-                    throw new \InvalidArgumentException(sprintf('Value of `x.%s` must be a string or array of strings', self::REF));
-                }
+                $value = $this->normalizeSchemaArray($operation->x[self::REF]);
+
                 foreach ($value as $classWithMethod) {
+                    // 提取 class 和 @ 的方法
                     $class = $classWithMethod;
                     $method = null;
                     if (str_contains($classWithMethod, '@')) {
@@ -53,16 +47,30 @@ final class SchemaRequest
                         throw new \InvalidArgumentException(sprintf('Value of `x.%s.%s` must be a schema reference', self::REF, $class));
                     }
 
+                    // 扩展
                     $this->expand($operation, $schema);
 
+                    // 从 method 上提取出 response 类型
                     if ($method) {
                         $this->add2responseXSchemaResponse($operation, $class, $method);
                     }
                 }
 
+                // 清理
                 $this->cleanUp($operation);
             }
         }
+    }
+
+    private function normalizeSchemaArray($value): array
+    {
+        if (is_string($value)) {
+            $value = [$value];
+        }
+        if (!is_array($value)) {
+            throw new \InvalidArgumentException(sprintf('Value of `x.%s` must be a string or array of strings', self::REF));
+        }
+        return $value;
     }
 
     private function expand(AnOperation $operation, AnSchema $schema): void
@@ -87,30 +95,29 @@ final class SchemaRequest
             return;
         }
 
-        $schemaRequired = Generator::isDefault($schema->required) ? [] : $schema->required;
+        // schema 上的 required
+        $schemaRequired = SwaggerHelper::getValue($schema->required, []);
 
         foreach ($schema->properties as $property) {
-            $this->fillPropertyWithDTO($property);
-            $propertyIn = $this->getPropertyXValue($property, SchemaConstants::X_PROPERTY_IN);
-            $propertyRequired = $this->getPropertyXValue($property, SchemaConstants::X_PROPERTY_REQUIRED);
-
+            // 处理 x in
+            $propertyIn = SwaggerHelper::getPropertyXValue($property, SchemaConstants::X_PROPERTY_IN);
+            // 获取默认的 in 的位置
             if ($propertyIn === null) {
                 $propertyIn = match ($operation->method) {
                     'get', 'head', 'options' => SchemaConstants::X_PROPERTY_IN_QUERY,
                     default => SchemaConstants::X_PROPERTY_IN_JSON,
                 };
             }
+            // 别名映射
             if ($propertyIn === SchemaConstants::X_PROPERTY_IN_GET) {
                 $propertyIn = SchemaConstants::X_PROPERTY_IN_QUERY;
             } elseif ($propertyIn === SchemaConstants::X_PROPERTY_IN_POST) {
                 $propertyIn = SchemaConstants::X_PROPERTY_IN_JSON;
             }
 
-            $schemaRequired = $this->fixSchemaRequiredWithPropertyRequired($property, $schemaRequired, $propertyRequired);
-
             $isRequired = in_array($property->property, $schemaRequired, true);
-            $isNullable = Generator::isDefault($property->nullable) ? null : $property->nullable;
-            $description = Generator::isDefault($property->description) ? null : $property->description;
+            $isNullable = SwaggerHelper::getValue($property->nullable);
+            $description = SwaggerHelper::getValue($property->description);
 
             if (in_array($propertyIn, [
                 SchemaConstants::X_PROPERTY_IN_COOKIE,
@@ -118,7 +125,8 @@ final class SchemaRequest
                 SchemaConstants::X_PROPERTY_IN_PATH,
                 SchemaConstants::X_PROPERTY_IN_QUERY,
             ], true)) {
-                $schemaNew = $this->renewSchemaWithProperty($property);
+                // 转为 Parameter
+                $schemaNew = SwaggerHelper::renewSchemaWithProperty($property);
                 $schemaNew->_context = $operation->_context; // inherit context from operation, required to pretend to be a parameter
 
                 $parameter = new Parameter(
@@ -126,13 +134,14 @@ final class SchemaRequest
                     description: $description,
                     in: $propertyIn,
                     required: $isRequired,
-                    schema: $schemaNew,
                     example: $property->example,
                 );
+                $parameter->schema = $schemaNew;
                 $parameter->_context = $operation->_context; // inherit context from operation, required to pretend to be a parameter
 
                 $this->add2parameters($operation, $parameter);
             } elseif ($propertyIn === SchemaConstants::X_PROPERTY_IN_JSON) {
+                // 转为 JsonBody
                 $schemaNew = $this->add2requestBodyJson($operation, $property);
                 if ($isRequired) {
                     if (Generator::isDefault($schemaNew->required)) {
@@ -141,6 +150,7 @@ final class SchemaRequest
                     $schemaNew->required[] = $property->property;
                 }
             } elseif ($propertyIn === SchemaConstants::X_PROPERTY_IN_BODY) {
+                // 转为 Body
                 $schemaNew = new Schema(
                     description: $description,
                     type: 'string',
@@ -153,9 +163,6 @@ final class SchemaRequest
             } else {
                 throw new \InvalidArgumentException(sprintf('Not support [%s] in `x.in`, class: [%s], property: [%s]', $propertyIn, $property->_context->class, $property->property));
             }
-
-            // 将重新修改过的 required 信息补全到原 schema 上
-            $schema->required = empty($schemaRequired) ? Generator::UNDEFINED : $schemaRequired;
         }
     }
 
@@ -203,7 +210,7 @@ final class SchemaRequest
         if (Generator::isDefault($operation->x)) {
             $operation->x = [];
         }
-        $responseXSchemaResponseKey = SchemaResponse::REF;
+        $responseXSchemaResponseKey = XSchemaResponseProcessor::REF;
         if (isset($operation->x[$responseXSchemaResponseKey])) {
             // 如果已经定义过，则不覆盖
             return;
@@ -216,7 +223,7 @@ final class SchemaRequest
             throw new \InvalidArgumentException("{$class}@{$method} 必须定义返回类型，且唯一");
         }
 
-        $operation->x[$responseXSchemaResponseKey][200] = '\\' . $reflectionReturnType->getName();
+        $operation->x[$responseXSchemaResponseKey] = $reflectionReturnType->getName();
     }
 
     private function cleanUp(AnOperation $operation): void

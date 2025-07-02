@@ -6,11 +6,12 @@ use OpenApi\Analysis;
 use OpenApi\Annotations\Operation as AnOperation;
 use OpenApi\Annotations\Tag as AnTag;
 use OpenApi\Generator;
+use WebmanTech\Swagger\Helper\SwaggerHelper;
 
 /**
  * 将 class 级别的一些信息聚合到 operation 上
  */
-class MergeClassLevelInfo
+final class MergeClassInfoProcessor
 {
     public function __invoke(Analysis $analysis): void
     {
@@ -18,8 +19,8 @@ class MergeClassLevelInfo
         $operations = $analysis->getAnnotationsOfType(AnOperation::class);
 
         foreach ($operations as $operation) {
-            $parentClass = ($operation->_context->namespace ?? '') . '\\' . ($operation->_context->class ?? '');
-            if ($parentClass === '\\') {
+            $parentClass = SwaggerHelper::getAnnotationClassName($operation);
+            if (!$parentClass) {
                 continue;
             }
             // tag

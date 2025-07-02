@@ -2,7 +2,7 @@
 
 namespace WebmanTech\Swagger\Helper;
 
-class ArrayHelper
+final class ArrayHelper
 {
     /**
      * 合并数组

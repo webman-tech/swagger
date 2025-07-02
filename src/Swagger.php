@@ -10,15 +10,19 @@ use WebmanTech\Swagger\Middleware\HostForbiddenMiddleware;
 use WebmanTech\Swagger\RouteAnnotation\Reader;
 use WebmanTech\Swagger\RouteAnnotation\Register;
 
-class Swagger
+final class Swagger
 {
+    public static function create(): self
+    {
+        return new self();
+    }
+
     /**
      * 注册全局
-     * @return void
      */
-    public function registerGlobalRoute()
+    public function registerGlobalRoute(): void
     {
-        $config = new ConfigRegisterRouteDTO((array)ConfigHelper::get('app.global_route', []));
+        $config = ConfigRegisterRouteDTO::fromConfig(ConfigHelper::get('app.global_route', []));
         if (!$config->openapi_doc->scan_path) {
             $config->openapi_doc->scan_path = [app_path()];
         }
@@ -27,14 +31,10 @@ class Swagger
 
     /**
      * 根据配置注册
-     * @param array|ConfigRegisterRouteDTO $config
-     * @return void
      */
-    public function registerRoute($config)
+    public function registerRoute(array|ConfigRegisterRouteDTO $config): void
     {
-        if (!$config instanceof ConfigRegisterRouteDTO) {
-            $config = new ConfigRegisterRouteDTO($config);
-        }
+        $config = ConfigRegisterRouteDTO::fromConfig($config);
         if (!$config->enable) {
             return;
         }
@@ -46,12 +46,14 @@ class Swagger
         $hostForbiddenMiddleware = new HostForbiddenMiddleware($config->host_forbidden);
         $controller = new OpenapiController();
 
-        $docRoute = 'doc';
+        $swaggerRoute = $config->route_prefix;
+        $docUrl = 'doc';
+        $docRoute = rtrim($swaggerRoute, '/') . '/' . $docUrl;
 
         // 注册 swagger 访问的路由
-        Route::get($config->route_prefix, fn() => $controller->swaggerUI($docRoute, $config->swagger_ui))->middleware($hostForbiddenMiddleware);
+        Route::get($swaggerRoute, fn() => $controller->swaggerUI($docUrl, $config->swagger_ui))->middleware($hostForbiddenMiddleware);
         // 注册 openapi doc 的路由
-        Route::get("{$config->route_prefix}/{$docRoute}", fn() => $controller->openapiDoc($config->openapi_doc))->middleware($hostForbiddenMiddleware);
+        Route::get($docRoute, fn() => $controller->openapiDoc($config->openapi_doc))->middleware($hostForbiddenMiddleware);
 
         // 注册 api 接口路由
         if ($config->register_webman_route) {

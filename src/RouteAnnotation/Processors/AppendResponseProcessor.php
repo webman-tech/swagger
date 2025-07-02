@@ -8,9 +8,9 @@ use OpenApi\Attributes\Response;
 use OpenApi\Generator;
 
 /**
- * 给 Options 添加必须的 response
+ * 给 Operation 添加必须的 response
  */
-final class AppendResponse
+final class AppendResponseProcessor
 {
     public function __invoke(Analysis $analysis): void
     {

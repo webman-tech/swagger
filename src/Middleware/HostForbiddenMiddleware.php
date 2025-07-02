@@ -9,20 +9,11 @@ use WebmanTech\Swagger\DTO\ConfigHostForbiddenDTO;
 
 class HostForbiddenMiddleware implements MiddlewareInterface
 {
-    /**
-     * @var ConfigHostForbiddenDTO
-     */
-    protected $config;
-
-    /**
-     * @param array|ConfigHostForbiddenDTO $config
-     */
-    public function __construct($config = [])
+    public function __construct(
+        protected array|ConfigHostForbiddenDTO $config = []
+    )
     {
-        if (!$config instanceof ConfigHostForbiddenDTO) {
-            $config = new ConfigHostForbiddenDTO($config);
-        }
-        $this->config = $config;
+        $this->config = ConfigHostForbiddenDTO::fromConfig($this->config);
     }
 
     /**
@@ -45,11 +36,11 @@ class HostForbiddenMiddleware implements MiddlewareInterface
 
     private function checkIp(Request $request): array
     {
-        if ($this->config->ip_white_list_intranet === null || $this->config->ip_white_list === null) {
+        if ($this->config->ip_white_list === null) {
             return [true, ''];
         }
         $ip = $request->getRealIp();
-        if ($this->config->ip_white_list_intranet && Request::isIntranetIp($ip)) {
+        if ($this->config->ip_white_list_intranet === true && Request::isIntranetIp($ip)) {
             return [true, ''];
         }
         if (in_array($ip, $this->config->ip_white_list)) {
@@ -65,7 +56,7 @@ class HostForbiddenMiddleware implements MiddlewareInterface
         }
         $host = (string)$request->host();
         foreach ($this->config->host_white_list as $needle) {
-            if ($needle !== '' && str_contains($host, (string) $needle)) {
+            if ($needle !== '' && str_contains($host, (string)$needle)) {
                 return [true, ''];
             }
         }

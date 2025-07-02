@@ -3,15 +3,16 @@
 namespace WebmanTech\Swagger\RouteAnnotation\Analysers;
 
 use OpenApi\Analysers\AttributeAnnotationFactory;
-use OpenApi\Analysers\DocBlockAnnotationFactory;
 use OpenApi\Analysis;
 
-class ReflectionAnalyser extends \OpenApi\Analysers\ReflectionAnalyser
+/**
+ * @internal
+ */
+final class ReflectionAnalyser extends \OpenApi\Analysers\ReflectionAnalyser
 {
     public function __construct()
     {
         parent::__construct([
-            new DocBlockAnnotationFactory(),
             new AttributeAnnotationFactory()
         ]);
     }

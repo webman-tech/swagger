@@ -4,7 +4,10 @@ namespace WebmanTech\Swagger\DTO;
 
 use WebmanTech\Swagger\Helper\ArrayHelper;
 
-class BaseDTO implements \JsonSerializable
+/**
+ * @internal
+ */
+class BaseDTO extends \WebmanTech\DTO\BaseDTO implements \JsonSerializable
 {
     final public function __construct(protected array $_data = [])
     {

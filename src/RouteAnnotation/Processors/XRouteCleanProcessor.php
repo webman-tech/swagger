@@ -7,7 +7,10 @@ use OpenApi\Annotations as OA;
 use OpenApi\Generator;
 use WebmanTech\Swagger\DTO\SchemaConstants;
 
-class CleanRouteX
+/**
+ * 清理路由相关的 x 属性
+ */
+final class XRouteCleanProcessor
 {
     public function __invoke(Analysis $analysis): void
     {

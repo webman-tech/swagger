@@ -1,13 +1,19 @@
 <?php
 
-namespace WebmanTech\Swagger\RouteAnnotation\Processors;
+namespace WebmanTech\Swagger\Overwrite\Processors;
 
 use OpenApi\Annotations\Schema as AnSchema;
 use OpenApi\Generator;
-use WebmanTech\Swagger\Helper\SwaggerHelper;
 
+/**
+ * @internal
+ */
 final class AugmentSchemas extends \OpenApi\Processors\AugmentSchemas
 {
+    public function __construct(private readonly \Closure $schemaNameFormatter)
+    {
+    }
+
     protected function augmentSchema(array $schemas): void
     {
         foreach ($schemas as $schema) {
@@ -15,7 +21,7 @@ final class AugmentSchemas extends \OpenApi\Processors\AugmentSchemas
                 continue;
             }
             if (Generator::isDefault($schema->schema)) {
-                SwaggerHelper::fillSchemaAttributeSchema($schema);
+                call_user_func($this->schemaNameFormatter, $schema);
             }
         }
     }

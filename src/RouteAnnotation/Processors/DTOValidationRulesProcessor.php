@@ -6,6 +6,7 @@ use OpenApi\Analysis;
 use OpenApi\Annotations\Items as AnItems;
 use OpenApi\Annotations\Property as AnProperty;
 use OpenApi\Annotations\Schema as AnSchema;
+use OpenApi\Attributes\Components;
 use OpenApi\Attributes\Items;
 use OpenApi\Attributes\Property;
 use OpenApi\Attributes\Schema;
@@ -18,10 +19,14 @@ use WebmanTech\Swagger\Helper\SwaggerHelper;
 /**
  * 将 DTO 中的 ValidationRules 信息附加到 Schema 上
  */
-class DTOValidationRulesProcessor
+final class DTOValidationRulesProcessor
 {
+    private Analysis $analysis;
+
     public function __invoke(Analysis $analysis): void
     {
+        $this->analysis = $analysis;
+
         /** @var AnSchema[] $schemas */
         $schemas = $analysis->getAnnotationsOfType(AnSchema::class);
         // 仅处理 Schema 即可，子类（比如 Property 等）不需要
@@ -94,18 +99,19 @@ class DTOValidationRulesProcessor
         if ($property->type === 'array') {
             // array 类型时，必须 Items
             if (Generator::isDefault($property->items)) {
+                $schemaItems = null;
                 if ($validationRules->arrayItem instanceof ValidationRules) {
                     $newProperty = new Property();
                     $newRequired = [];
                     $this->fillPropertyByItsAttributions($newProperty, $validationRules->arrayItem, $newRequired);
-                    $itemSchema = SwaggerHelper::renewSchemaWithProperty($newProperty, AnItems::class);
-                    $itemSchema->required = $newRequired ?: Generator::UNDEFINED;
-                    $property->items = $itemSchema;
+                    $schemaItems = SwaggerHelper::renewSchemaWithProperty($newProperty, AnItems::class);
+                    $schemaItems->required = $newRequired ?: Generator::UNDEFINED;
                 } elseif (is_string($validationRules->arrayItem) && class_exists($validationRules->arrayItem)) {
-                    $property->items = new Items(ref: SwaggerHelper::getSchemaRefByClassName($validationRules->arrayItem));
-                } else {
-                    $property->items = new Items();
+                    if ($schemaNew = $this->analysis->getSchemaForSource($validationRules->arrayItem)) {
+                        $schemaItems = new Items(ref: Components::ref($schemaNew));
+                    }
                 }
+                $property->items = $schemaItems ?? new Items();
             }
         }
         // enum 和 object，Swagger 会自行处理

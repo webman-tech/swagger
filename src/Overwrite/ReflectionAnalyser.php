@@ -1,6 +1,6 @@
 <?php
 
-namespace WebmanTech\Swagger\RouteAnnotation\Analysers;
+namespace WebmanTech\Swagger\Overwrite;
 
 use OpenApi\Analysers\AttributeAnnotationFactory;
 use OpenApi\Analysis;

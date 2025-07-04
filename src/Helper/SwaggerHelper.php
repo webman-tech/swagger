@@ -2,9 +2,7 @@
 
 namespace WebmanTech\Swagger\Helper;
 
-use OpenApi\Analysis;
 use OpenApi\Annotations\AbstractAnnotation;
-use OpenApi\Annotations\Components;
 use OpenApi\Annotations\Property as AnProperty;
 use OpenApi\Annotations\Schema as AnSchema;
 use OpenApi\Generator;
@@ -14,8 +12,6 @@ use OpenApi\Generator;
  */
 final class SwaggerHelper
 {
-    private static string $schemaNameSlashReplace = '_';
-
     /**
      * 获取值
      */
@@ -47,47 +43,6 @@ final class SwaggerHelper
         }
 
         return $className;
-    }
-
-    private static function className2schemaName(string $className): string
-    {
-        return str_replace('\\', self::$schemaNameSlashReplace, ltrim($className, '\\'));
-    }
-
-    private static function schemaName2className(string $schemaName): string
-    {
-        return str_replace(self::$schemaNameSlashReplace, '\\', $schemaName);
-    }
-
-    /**
-     * 填充 schema 类型的 schema 属性(名字): 使用全 class 名
-     */
-    public static function fillSchemaAttributeSchema(AnSchema $schema): void
-    {
-        if (!Generator::isDefault($schema->schema)) {
-            return;
-        }
-
-        if ($className = self::getAnnotationClassName($schema)) {
-            $schema->schema = self::className2schemaName($className);
-        }
-    }
-
-    /**
-     * 根据 schema 的 ref 获取 schema
-     */
-    public static function getSchemaBySchemaRef(string $ref, Analysis $analysis): ?AnSchema
-    {
-        $schemaName = str_replace(Components::SCHEMA_REF, '', $ref);
-        return $analysis->getSchemaForSource(self::schemaName2className($schemaName));
-    }
-
-    /**
-     * 根据 className 获取 schema 的 ref
-     */
-    public static function getSchemaRefByClassName(string $className): string
-    {
-        return Components::SCHEMA_REF . self::className2schemaName($className);
     }
 
     /**

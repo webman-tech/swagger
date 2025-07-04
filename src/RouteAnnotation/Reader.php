@@ -9,7 +9,7 @@ use OpenApi\Generator;
 use Symfony\Component\Finder\Finder;
 use WebmanTech\Swagger\DTO\SchemaConstants;
 use WebmanTech\Swagger\Helper\SwaggerHelper;
-use WebmanTech\Swagger\RouteAnnotation\Analysers\ReflectionAnalyser;
+use WebmanTech\Swagger\Overwrite\ReflectionAnalyser;
 use WebmanTech\Swagger\RouteAnnotation\DTO\RouteConfigDTO;
 
 /**

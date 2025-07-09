@@ -15,7 +15,7 @@ composer require webman-tech/swagger
 
 ## 特点
 
-- 基于 [zircote/swagger-php](https://github.com/zircote/swagger-php)（同时支持 Annotation 和 Attribute 模式）
+- 基于 [zircote/swagger-php](https://github.com/zircote/swagger-php)（支持 Attribute 模式）
 - 支持零配置启动（安装后直接访问 /openapi 即可看到 swagger UI 的界面）
 - 支持单应用下多个 swagger 文档（多路由，不同 api 文档）
 - 支持动态修改注解下的 swagger 文档（解决注解下无法写动态配置的问题）
@@ -31,9 +31,6 @@ composer require webman-tech/swagger
 
 默认扫描整个 `app_path()`
 
-之后在 Controller
-写对应的注解即可，参考 [zircote/swagger-php petstore.swagger.io](https://github.com/zircote/swagger-php/tree/master/Examples/petstore.swagger.io)
-
 ### 修改 @OA\Info 等全局的配置
 
 第一种：通过添加注释的方式修改
@@ -43,15 +40,13 @@ composer require webman-tech/swagger
 
 namespace app\swagger;
 
-use OpenApi\Annotations as OA;
+use OpenApi\Attributes as OA;
 
 /**
  * @link https://swagger.io/specification/#info-object
- * @OA\OpenApi(
- *     @OA\Info(version="1.0.0", title="My App"),
- *     @OA\Server(url="/api", description="localhost"),
- * )
  */
+#[OA\Info(version: '1.0.0', title: 'My App')]
+#[OA\Server(url: '/api', description: 'localhost')]
 class OpenapiSpec
 {
 }
@@ -89,7 +84,7 @@ use OpenApi\Annotations as OA;
 默认通过配置 `app.php` 中的 `global_route` 配置会启用全局的扫描 `app_path()` 的文档，
 可以通过设置 `enable => false` 来关闭
 
-在需要的地方通过 `(new Swagger())->registerRoute()` 来手动注册文档路由
+在需要的地方通过 `Swagger::create()->registerRoute()` 来手动注册文档路由
 
 如：
 
@@ -100,7 +95,7 @@ use Webman\Route;
 use WebmanTech\Swagger\Swagger;
 
 Route::group('/api1', function () {
-    (new Swagger())->registerRoute([
+    Swagger::create()->registerRoute([
         'route_prefix' => '/openapi',
         'openapi_doc' => [
             'scan_path' => app_path() . '/controller/api1',
@@ -111,7 +106,7 @@ Route::group('/api1', function () {
 });
 
 Route::group('/api2', function () {
-    (new Swagger())->registerRoute([
+    Swagger::create()->registerRoute([
         'route_prefix' => '/my-doc',
         'openapi_doc' => [
             'scan_path' => app_path() . '/controller/api2',
@@ -130,7 +125,7 @@ Route::group('/api2', function () {
 
 `app.php` 中的配置是全局的
 
-`(new Swagger())->registerRoute($config)` 中的传参 `$config` 是应用级别的
+`Swagger::create()->registerRoute($config)` 中的传参 `$config` 是应用级别的
 
 ## webman 路由自动注册
 
@@ -138,28 +133,41 @@ Route::group('/api2', function () {
 
 ## 路由传参与 swagger 文档绑定，并且支持自动校验（仅支持 php>=8.1）
 
-建立一个 Schema（可同时用于 POST 和 GET）
+建立一个 Form（可同时用于 POST 和 GET）
 
 ```php
 <?php
 
+namespace app\form;
+
+use WebmanTech\DTO\Attributes\ValidationRules;
+use WebmanTech\DTO\BaseRequestDTO;
+use WebmanTech\DTO\BaseResponseDTO;
 use OpenApi\Attributes as OA;
-use WebmanTech\Swagger\SchemaAnnotation\BaseSchema;
 
 #[OA\Schema(required: ['name', 'age'])]
-class TestSchema extends BaseSchema {
+class TestForm extends BaseRequestDTO {
     #[OA\Property(description: '名称', example: 'webman')]
     public string $name = '';
     #[OA\Property(description: '年龄', example: 5)]
+    #[ValidationRules(max: 100)]
     public int $age = 0;
     #[OA\Property(description: '备注', example: 'xxx')]
     public string $remark = '';
     
-    protected function validationExtraRules() : array{
-        // 此处可自定义 校验规则
-        return [
-            'age' => 'max:100',        
-        ];
+    public function doSomething(): TestFormResult {
+        return new TestFormResult(
+            name: 'abc',
+        )
+    }
+}
+
+#[OA\Schema]
+class TestFormResult extends BaseResponseDTO {
+    public function __construct(
+        #[OA\Property(description: '名称')]
+        public string $name,
+    ) {
     }
 }
 ```
@@ -168,6 +176,7 @@ class TestSchema extends BaseSchema {
 
 ```php
 
+use app\form\TestForm;
 use OpenApi\Attributes as OA;
 use WebmanTech\Swagger\DTO\SchemaConstants;
 
@@ -175,45 +184,17 @@ class IndexController {
      #[OA\Post(
         path: '/xxx',
         summary: '接口说明',
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: [
-                new OA\JsonContent(
-                    ref: TestSchema::class, // 简化 Body 的定义
-                ),
-            ],
-        ),
-    )]
-    #[OA\Response(response: 200, description: 'null')]
-    public function md(Request $request) {
-        $schema = TestSchema::create($request->post(), validator()); // 自动装载加自动校验
-        
-        // do something
-        
-        return response();
-    }
-    
-    #[OA\Get(
-        path: '/xxx',
-        summary: '接口说明',
         x: [
-            SchemaConstants::X_SCHEMA_REQUEST => TestSchema::class, // 该定义会自动将 Schema 转为 QueryParameters
+            SchemaConstants::X_SCHEMA_REQUEST => TestForm::class . '@doSomething'
         ],
     )]
-    #[OA\Response(response: 200, description: 'null')]
     public function md(Request $request) {
-        $schema = TestSchema::create($request->get(), validator()); // 自动装载加自动校验
-        
-        // do something
-        
-        return response();
+        return TestForm::fromRequest($request)
+            ->doSomething()
+            ->toResponse();
     }
 }
 ```
-
-注意：目前包含以下内容
-
-- Data Types: 基本数据类型（int、float、string、bool、array、object）支持，不支持校验 string|int 这种联合类型
 
 ## 参考
 

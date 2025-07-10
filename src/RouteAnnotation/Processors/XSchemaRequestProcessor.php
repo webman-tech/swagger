@@ -8,6 +8,7 @@ use OpenApi\Annotations\Operation as AnOperation;
 use OpenApi\Annotations\Parameter as AnParameter;
 use OpenApi\Annotations\Property as AnProperty;
 use OpenApi\Annotations\Schema as AnSchema;
+use OpenApi\Attributes\Components;
 use OpenApi\Attributes\MediaType;
 use OpenApi\Attributes\Parameter;
 use OpenApi\Attributes\RequestBody;
@@ -95,9 +96,8 @@ final class XSchemaRequestProcessor
             return;
         }
 
-        // schema 上的 required
-        $schemaRequired = SwaggerHelper::getValue($schema->required, []);
-
+        // 处理 x in
+        $propertiesIn = new \WeakMap();
         foreach ($schema->properties as $property) {
             // 处理 x in
             $propertyIn = SwaggerHelper::getPropertyXValue($property, SchemaConstants::X_PROPERTY_IN);
@@ -114,54 +114,75 @@ final class XSchemaRequestProcessor
             } elseif ($propertyIn === SchemaConstants::X_PROPERTY_IN_POST) {
                 $propertyIn = SchemaConstants::X_PROPERTY_IN_JSON;
             }
+            $propertiesIn[$property] = $propertyIn;
+        }
+        // 检查所有 schema 的参数是否都在 json 中
+        $isAllPropertiesInJson = true;
+        foreach ($schema->properties as $property) {
+            if ($propertiesIn[$property] !== SchemaConstants::X_PROPERTY_IN_JSON) {
+                $isAllPropertiesInJson = false;
+                break;
+            }
+        }
 
-            $isRequired = in_array($property->property, $schemaRequired, true);
-            $isNullable = SwaggerHelper::getValue($property->nullable);
-            $description = SwaggerHelper::getValue($property->description);
+        if ($isAllPropertiesInJson) {
+            // 全部都在 json 中的，直接附加到 ref 上
+            $this->add2requestBodyJsonUseRef($operation, $schema);
+        } else {
+            // 根据 propertyIn 一个去处理
+            $schemaRequired = SwaggerHelper::getValue($schema->required, []);
 
-            if (in_array($propertyIn, [
-                SchemaConstants::X_PROPERTY_IN_COOKIE,
-                SchemaConstants::X_PROPERTY_IN_HEADER,
-                SchemaConstants::X_PROPERTY_IN_PATH,
-                SchemaConstants::X_PROPERTY_IN_QUERY,
-            ], true)) {
-                // 转为 Parameter
-                $schemaNew = SwaggerHelper::renewSchemaWithProperty($property);
-                $schemaNew->_context = $operation->_context; // inherit context from operation, required to pretend to be a parameter
+            foreach ($schema->properties as $property) {
+                $propertyIn = $propertiesIn[$property];
 
-                $parameter = new Parameter(
-                    name: $property->property,
-                    description: $description,
-                    in: $propertyIn,
-                    required: $isRequired,
-                    example: $property->example,
-                );
-                $parameter->schema = $schemaNew;
-                $parameter->_context = $operation->_context; // inherit context from operation, required to pretend to be a parameter
+                $isRequired = in_array($property->property, $schemaRequired, true);
+                $isNullable = SwaggerHelper::getValue($property->nullable);
+                $description = SwaggerHelper::getValue($property->description);
 
-                $this->add2parameters($operation, $parameter);
-            } elseif ($propertyIn === SchemaConstants::X_PROPERTY_IN_JSON) {
-                // 转为 JsonBody
-                $schemaNew = $this->add2requestBodyJson($operation, $property);
-                if ($isRequired) {
-                    if (Generator::isDefault($schemaNew->required)) {
-                        $schemaNew->required = [];
+                if (in_array($propertyIn, [
+                    SchemaConstants::X_PROPERTY_IN_COOKIE,
+                    SchemaConstants::X_PROPERTY_IN_HEADER,
+                    SchemaConstants::X_PROPERTY_IN_PATH,
+                    SchemaConstants::X_PROPERTY_IN_QUERY,
+                ], true)) {
+                    // 转为 Parameter
+                    $schemaNew = SwaggerHelper::renewSchemaWithProperty($property);
+                    $schemaNew->_context = $operation->_context; // inherit context from operation, required to pretend to be a parameter
+
+                    $parameter = new Parameter(
+                        name: $property->property,
+                        description: $description,
+                        in: $propertyIn,
+                        required: $isRequired,
+                        example: $property->example,
+                    );
+                    $parameter->schema = $schemaNew;
+                    $parameter->_context = $operation->_context; // inherit context from operation, required to pretend to be a parameter
+
+                    $this->add2parameters($operation, $parameter);
+                } elseif ($propertyIn === SchemaConstants::X_PROPERTY_IN_JSON) {
+                    // 转为 JsonBody
+                    $schemaNew = $this->add2requestBodyJson($operation, $property);
+                    if ($isRequired) {
+                        if (Generator::isDefault($schemaNew->required)) {
+                            $schemaNew->required = [];
+                        }
+                        $schemaNew->required[] = $property->property;
                     }
-                    $schemaNew->required[] = $property->property;
-                }
-            } elseif ($propertyIn === SchemaConstants::X_PROPERTY_IN_BODY) {
-                // 转为 Body
-                $schemaNew = new Schema(
-                    description: $description,
-                    type: 'string',
-                    format: 'binary',
-                    nullable: $isNullable,
-                );
+                } elseif ($propertyIn === SchemaConstants::X_PROPERTY_IN_BODY) {
+                    // 转为 Body
+                    $schemaNew = new Schema(
+                        description: $description,
+                        type: 'string',
+                        format: 'binary',
+                        nullable: $isNullable,
+                    );
 
-                $mediaType = $this->getRequestMediaType($operation, 'application/octect-stream');
-                $mediaType->schema = $schemaNew;
-            } else {
-                throw new \InvalidArgumentException(sprintf('Not support [%s] in `x.in`, class: [%s], property: [%s]', $propertyIn, $property->_context->class, $property->property));
+                    $mediaType = $this->getRequestMediaType($operation, 'application/octect-stream');
+                    $mediaType->schema = $schemaNew;
+                } else {
+                    throw new \InvalidArgumentException(sprintf('Not support [%s] in `x.in`, class: [%s], property: [%s]', $propertyIn, $property->_context->class, $property->property));
+                }
             }
         }
     }
@@ -203,6 +224,15 @@ final class XSchemaRequestProcessor
         $schema->properties[] = $property;
 
         return $schema;
+    }
+
+    private function add2requestBodyJsonUseRef(AnOperation $operation, AnSchema $schema): void
+    {
+        $mediaType = $this->getRequestMediaType($operation, 'application/json');
+        if (Generator::isDefault($mediaType->schema)) {
+            $mediaType->schema = new Schema();
+        }
+        $mediaType->schema->ref = Components::ref($schema);
     }
 
     private function add2responseXSchemaResponse(AnOperation $operation, string $class, string $method): void

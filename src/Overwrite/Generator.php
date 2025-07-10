@@ -74,6 +74,14 @@ final class Generator extends \OpenApi\Generator
                 }
 
                 $pipeline
+                    ->remove(OAProcessors\CleanUnusedComponents::class)
+                    ->remove(null, function (&$pipe) {
+                        // 替换实现
+                        if ($pipe instanceof OAProcessors\AugmentParameters) {
+                            $pipe = new Processors\AugmentParameters();
+                        }
+                        return true;
+                    })
                     ->add(new RouteAnnotation\Processors\ExpandEloquentModelProcessor(
                         enabled: $this->openapiDocConfig->expand_eloquent_model_enable,
                     ))
@@ -87,6 +95,9 @@ final class Generator extends \OpenApi\Generator
                     ->add(new RouteAnnotation\Processors\XSchemaResponseProcessor())
                     ->add(new RouteAnnotation\Processors\AppendResponseProcessor())
                     ->add(new RouteAnnotation\Processors\XRouteCleanProcessor())
+                    ->add(new OAProcessors\CleanUnusedComponents(
+                        enabled: $this->openapiDocConfig->clean_unused_components_enable,
+                    ))
                     ->add(new RouteAnnotation\Processors\SortComponentsProcessor());
             });
     }

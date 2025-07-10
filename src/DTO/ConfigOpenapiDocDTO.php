@@ -18,7 +18,9 @@ final class ConfigOpenapiDocDTO extends BaseConfigDTO
         public null|string|Closure $cache_key = null, // 缓存用的 key，当注册不同实例时，需要指定不同的 key，或者做热更新用
         public string              $format = 'yaml', // yaml/json
         public null|true|Closure   $schema_name_format_use_classname = null, // schema 的名称是否使用完整的类名（swagger-php 默认取类的名字，不带 namespace）
+        public bool                $schema_enum_description_enable = true, // 提取 enum 的描述信息开关
         public null                $schema_enum_description_method = null, // 指定提取 enum 的描述信息的方法名
+        public bool                $expand_eloquent_model_enable = true, // 是否自动扫描 Eloquent Model 的属性，并生成对应的 schema
     )
     {
     }

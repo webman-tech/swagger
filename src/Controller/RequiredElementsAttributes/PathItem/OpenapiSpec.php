@@ -4,7 +4,10 @@ namespace WebmanTech\Swagger\Controller\RequiredElementsAttributes\PathItem;
 
 use OpenApi\Attributes as OA;
 
-class OpenapiSpec
+/**
+ * @internal
+ */
+final class OpenapiSpec
 {
     #[OA\Get(
         path: '/example',

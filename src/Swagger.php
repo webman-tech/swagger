@@ -2,13 +2,12 @@
 
 namespace WebmanTech\Swagger;
 
-use Webman\Route;
 use WebmanTech\Swagger\Controller\OpenapiController;
 use WebmanTech\Swagger\DTO\ConfigRegisterRouteDTO;
 use WebmanTech\Swagger\Helper\ConfigHelper;
-use WebmanTech\Swagger\Middleware\HostForbiddenMiddleware;
+use WebmanTech\Swagger\Integrations\Middleware;
+use WebmanTech\Swagger\Integrations\RouteRegister;
 use WebmanTech\Swagger\RouteAnnotation\Reader;
-use WebmanTech\Swagger\RouteAnnotation\Register;
 
 final class Swagger
 {
@@ -30,7 +29,7 @@ final class Swagger
     }
 
     /**
-     * 根据配置注册
+     * 根据配置注册路由
      */
     public function registerRoute(array|ConfigRegisterRouteDTO $config): void
     {
@@ -43,23 +42,24 @@ final class Swagger
             throw new \InvalidArgumentException('openapi_doc.scan_path is required');
         }
 
-        $hostForbiddenMiddleware = new HostForbiddenMiddleware($config->host_forbidden);
+        $hostForbiddenMiddleware = Middleware::create()->makeHostForbiddenMiddleware($config->host_forbidden);
         $controller = new OpenapiController();
 
         $swaggerRoute = $config->route_prefix;
         $docUrl = 'doc';
         $docRoute = rtrim($swaggerRoute, '/') . '/' . $docUrl;
 
+        $routerRegister = RouteRegister::create();
+
         // 注册 swagger 访问的路由
-        Route::get($swaggerRoute, fn() => $controller->swaggerUI($docUrl, $config->swagger_ui))->middleware($hostForbiddenMiddleware);
+        $routerRegister->addRoute('GET', $swaggerRoute, fn() => $controller->swaggerUI($docUrl, $config->swagger_ui), $hostForbiddenMiddleware);
         // 注册 openapi doc 的路由
-        Route::get($docRoute, fn() => $controller->openapiDoc($config->openapi_doc))->middleware($hostForbiddenMiddleware);
+        $routerRegister->addRoute('GET', $docRoute, fn() => $controller->openapiDoc($config->openapi_doc), $hostForbiddenMiddleware);
 
         // 注册 api 接口路由
-        if ($config->register_webman_route) {
+        if ($config->register_route) {
             $reader = new Reader();
-            $register = new Register($reader->getData($config->openapi_doc->scan_path));
-            $register->registerRoute();
+            $routerRegister->register($reader->getData($config->openapi_doc->scan_path));
         }
     }
 }

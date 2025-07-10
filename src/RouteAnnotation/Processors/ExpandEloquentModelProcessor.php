@@ -20,6 +20,9 @@ final class ExpandEloquentModelProcessor
         private bool $enabled = true,
     )
     {
+        if (!class_exists(Model::class)) {
+            $this->enabled = false;
+        }
     }
 
     public function __invoke(Analysis $analysis): void

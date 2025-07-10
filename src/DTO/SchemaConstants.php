@@ -19,14 +19,8 @@ final class SchemaConstants
     public const X_PATH = 'route-path';
     /**
      * 路由中间件
-     * @see self::getRouteMiddlewares()
      */
     public const X_MIDDLEWARE = 'route-middleware';
-
-    /**
-     * 命名路由的前缀
-     */
-    public const MIDDLEWARE_NAMED_PREFIX = '@named:';
 
     /**
      * 将 schema 转到 request 上
@@ -36,10 +30,6 @@ final class SchemaConstants
      * 将 schema 转到 response 上
      */
     public const X_SCHEMA_RESPONSE = 'schema-response';
-    /**
-     * @deprecated 使用 X_SCHEMA_REQUEST 代替
-     */
-    public const X_SCHEMA_TO_PARAMETERS = self::X_SCHEMA_REQUEST;
 
     /**
      * OA\Property 的 x 中使用的 in 参数名

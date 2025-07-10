@@ -11,7 +11,7 @@ return [
      */
     'global_route' => [
         'enable' => true,
-        'register_webman_route' => false,
+        'register_route' => false,
     ],
     /**
      * 全局的 host forbidden 配置

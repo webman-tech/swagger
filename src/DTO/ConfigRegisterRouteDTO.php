@@ -13,9 +13,14 @@ final class ConfigRegisterRouteDTO extends BaseConfigDTO
         public ?ConfigHostForbiddenDTO $host_forbidden = null, // 允许访问的 host
         public ?ConfigSwaggerUiDTO     $swagger_ui = null, // swagger ui 的配置
         public ?ConfigOpenapiDocDTO    $openapi_doc = null, // openapi 文档的配置
-        public bool                    $register_webman_route = false, // 是否注册 webman 的路由
+        public bool                    $register_webman_route = false, // 是否注册 webman 的路由（弃用，请使用 register_route）
+        public bool                    $register_route = false, // 是否注册路由
     )
     {
+        if ($this->register_webman_route) {
+            // 暂时先兼容旧的配置
+            $this->register_route = true;
+        }
     }
 
     protected static function getAppConfig(): array

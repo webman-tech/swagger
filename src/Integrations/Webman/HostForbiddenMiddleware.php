@@ -1,13 +1,13 @@
 <?php
 
-namespace WebmanTech\Swagger\Middleware;
+namespace WebmanTech\Swagger\Integrations\Webman;
 
 use Webman\Http\Request;
 use Webman\Http\Response;
 use Webman\MiddlewareInterface;
 use WebmanTech\Swagger\DTO\ConfigHostForbiddenDTO;
 
-class HostForbiddenMiddleware implements MiddlewareInterface
+final class HostForbiddenMiddleware implements MiddlewareInterface
 {
     public function __construct(
         protected array|ConfigHostForbiddenDTO $config = []

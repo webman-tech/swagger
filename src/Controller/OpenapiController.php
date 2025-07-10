@@ -5,13 +5,13 @@ namespace WebmanTech\Swagger\Controller;
 use OpenApi\Annotations as OA;
 use Symfony\Component\Finder\Finder;
 use Throwable;
-use Webman\Http\Response;
 use WebmanTech\Swagger\DTO\ConfigOpenapiDocDTO;
 use WebmanTech\Swagger\DTO\ConfigSwaggerUiDTO;
 use WebmanTech\Swagger\Helper\JsExpression;
+use WebmanTech\Swagger\Integrations\Response;
 use WebmanTech\Swagger\Overwrite\Generator;
 
-class OpenapiController
+final class OpenapiController
 {
     private readonly array $requiredElements;
 
@@ -26,14 +26,14 @@ class OpenapiController
     /**
      * @throws Throwable
      */
-    public function swaggerUI(string $docRoute, ConfigSwaggerUiDTO|array $config = []): Response
+    public function swaggerUI(string $docRoute, ConfigSwaggerUiDTO|array $config = [])
     {
         $config = ConfigSwaggerUiDTO::fromConfig($config);
 
         $data = $config->data;
         $data['ui_config']['url'] = new JsExpression("window.location.pathname + '/{$docRoute}'");
 
-        return raw_view($config->view, $data, $config->view_path);
+        return Response::create()->renderView($config->view, $data, $config->view_path);
     }
 
     private static array $docCache = [];
@@ -41,7 +41,7 @@ class OpenapiController
     /**
      * @throws Throwable
      */
-    public function openapiDoc(ConfigOpenapiDocDTO|array $config = []): Response
+    public function openapiDoc(ConfigOpenapiDocDTO|array $config = [])
     {
         $config = ConfigOpenapiDocDTO::fromConfig($config);
 
@@ -60,9 +60,7 @@ class OpenapiController
         }
         [$content, $contentType] = self::$docCache[$cacheKey];
 
-        return response($content, 200, [
-            'Content-Type' => $contentType,
-        ]);
+        return Response::create()->body($content, ['Content-Type' => $contentType]);
     }
 
     /**

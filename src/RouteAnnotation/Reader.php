@@ -2,6 +2,7 @@
 
 namespace WebmanTech\Swagger\RouteAnnotation;
 
+use OpenApi\Analysers\AttributeAnnotationFactory;
 use OpenApi\Analysis;
 use OpenApi\Annotations as OA;
 use OpenApi\Context;
@@ -34,7 +35,11 @@ final class Reader
     public function __construct()
     {
         $this->context = new Context();
-        $this->analyser = new ReflectionAnalyser();
+        $this->analyser = new ReflectionAnalyser(
+            annotationFactories: [
+                new AttributeAnnotationFactory(),
+            ],
+        );
         $this->generator = new Generator();
     }
 

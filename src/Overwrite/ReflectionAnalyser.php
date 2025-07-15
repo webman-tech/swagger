@@ -2,7 +2,6 @@
 
 namespace WebmanTech\Swagger\Overwrite;
 
-use OpenApi\Analysers\AttributeAnnotationFactory;
 use OpenApi\Analysis;
 
 /**
@@ -10,13 +9,6 @@ use OpenApi\Analysis;
  */
 final class ReflectionAnalyser extends \OpenApi\Analysers\ReflectionAnalyser
 {
-    public function __construct()
-    {
-        parent::__construct([
-            new AttributeAnnotationFactory()
-        ]);
-    }
-
     protected function analyzeFqdn(string $fqdn, Analysis $analysis, array $details): Analysis
     {
         try {

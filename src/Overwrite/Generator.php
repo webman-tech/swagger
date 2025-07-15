@@ -34,7 +34,7 @@ final class Generator extends \OpenApi\Generator
                     ->ltrim('\\')
                     ->replace('\\', ' ')
                     ->studly()
-                    ->toString();
+                    ->__toString();
         }
     }
 
@@ -57,7 +57,13 @@ final class Generator extends \OpenApi\Generator
         return $this
             ->setAliases(self::DEFAULT_ALIASES)
             ->setNamespaces(self::DEFAULT_NAMESPACES)
-            ->setAnalyser(new ReflectionAnalyser())
+            ->setAnalyser(new ReflectionAnalyser(
+                annotationFactories: [
+                    new Analysers\AttributeAnnotationFactory(
+                        autoLoadSchemaClasses: $this->openapiDocConfig->auto_load_schema_classes,
+                    ),
+                ],
+            ))
             ->withProcessorPipeline(function (Pipeline $pipeline): void {
                 if ($this->schemaNameUseClassNameFormat) {
                     $pipeline

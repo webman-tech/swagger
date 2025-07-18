@@ -33,17 +33,8 @@ final class SchemaConstants
 
     /**
      * OA\Property 的 x 中使用的 in 参数名
+     * 支持的值见
+     * @see RequestPropertyInEnum
      */
     public const X_PROPERTY_IN = 'in';
-    /**
-     * OA\Property 的 x.in 的支持的值
-     */
-    public const X_PROPERTY_IN_JSON = 'json';
-    public const X_PROPERTY_IN_QUERY = 'query';
-    public const X_PROPERTY_IN_PATH = 'path';
-    public const X_PROPERTY_IN_HEADER = 'header';
-    public const X_PROPERTY_IN_COOKIE = 'cookie';
-    public const X_PROPERTY_IN_BODY = 'body';
-    public const X_PROPERTY_IN_POST = 'post'; // alias -> json
-    public const X_PROPERTY_IN_GET = 'get'; // alias -> query
 }

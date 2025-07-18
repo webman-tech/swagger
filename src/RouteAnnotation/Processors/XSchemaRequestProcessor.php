@@ -3,26 +3,23 @@
 namespace WebmanTech\Swagger\RouteAnnotation\Processors;
 
 use OpenApi\Analysis;
-use OpenApi\Annotations\MediaType as AnMediaType;
 use OpenApi\Annotations\Operation as AnOperation;
-use OpenApi\Annotations\Parameter as AnParameter;
 use OpenApi\Annotations\Property as AnProperty;
 use OpenApi\Annotations\Schema as AnSchema;
-use OpenApi\Attributes\Components;
-use OpenApi\Attributes\MediaType;
-use OpenApi\Attributes\Parameter;
-use OpenApi\Attributes\RequestBody;
-use OpenApi\Attributes\Schema;
+use OpenApi\Context;
 use OpenApi\Generator;
 use WebmanTech\Swagger\DTO\SchemaConstants;
+use WebmanTech\Swagger\Enums\PropertyInEnum;
 use WebmanTech\Swagger\Helper\SwaggerHelper;
+use WebmanTech\Swagger\RouteAnnotation\DTO\XInPropertyDTO;
 
 /**
  * 将定义的 schema 转到 request 的 parameters 或 requestBody 上
  */
 final class XSchemaRequestProcessor
 {
-    private const REF = SchemaConstants::X_SCHEMA_REQUEST;
+    private const X_SCHEMA = SchemaConstants::X_SCHEMA_REQUEST;
+    private const X_SCHEMA_CLASS_METHOD = '_temp-class-method';
 
     private Analysis $analysis;
 
@@ -33,219 +30,147 @@ final class XSchemaRequestProcessor
         $operations = $analysis->getAnnotationsOfType(AnOperation::class);
 
         foreach ($operations as $operation) {
-            if (!Generator::isDefault($operation->x) && array_key_exists(self::REF, $operation->x)) {
-                $value = $this->normalizeSchemaArray($operation->x[self::REF]);
-
-                foreach ($value as $classWithMethod) {
-                    // 提取 class 和 @ 的方法
-                    $class = $classWithMethod;
-                    $method = null;
-                    if (str_contains($classWithMethod, '@')) {
-                        [$class, $method] = explode('@', $classWithMethod);
-                    }
-                    $schema = $analysis->getSchemaForSource($class);
-                    if (!$schema instanceof AnSchema) {
-                        throw new \InvalidArgumentException(sprintf('Value of `x.%s.%s` must be a schema reference', self::REF, $class));
-                    }
-
-                    // 扩展
-                    $this->expand($operation, $schema);
-
-                    // 从 method 上提取出 response 类型
-                    if ($method) {
-                        $this->add2responseXSchemaResponse($operation, $class, $method);
-                    }
+            $schemaList = $this->getNormalizedSchemaValues($operation);
+            if ($schemaList === null) {
+                continue;
+            }
+            $defaultPropertyIn = match ($operation->method) {
+                'get', 'head', 'options' => PropertyInEnum::Query,
+                default => PropertyInEnum::Json,
+            };
+            foreach ($schemaList as $schema) {
+                // 根据 property in 所在的地方，将数据转移到不同上面
+                $propertyIn = PropertyInEnum::tryFromSchemaX($schema, $defaultPropertyIn);
+                // 将 schema 上的 x-in-property 放到对应位置
+                $this->addXInProperties($operation, $schema);
+                if ($propertyIn === PropertyInEnum::Json) {
+                    // 添加到 requestBody 上
+                    $this->add2requestBodyJsonUseRef($operation, $schema);
+                } elseif (in_array($propertyIn, PropertyInEnum::REQUEST_PARAMETERS, true)) {
+                    // 添加到 parameters 上
+                    $this->add2parametersUseSchema($operation, $schema, $propertyIn);
                 }
 
-                // 清理
-                $this->cleanUp($operation);
+                // 从 classMethod 上提取出 response 类型
+                if ($classMethod = SwaggerHelper::getAnnotationXValue($schema, self::X_SCHEMA_CLASS_METHOD)) {
+                    SwaggerHelper::removeAnnotationXValue($schema, self::X_SCHEMA_CLASS_METHOD);
+                    $this->add2responseXSchemaResponse($operation, $classMethod);
+                }
             }
+
+            // 清理
+            SwaggerHelper::removeAnnotationXValue($operation, self::X_SCHEMA);
         }
     }
 
-    private function normalizeSchemaArray($value): array
+    /**
+     * @return AnSchema[]|null
+     */
+    private function getNormalizedSchemaValues(AnOperation $operation): ?array
     {
-        if (is_string($value)) {
-            $value = [$value];
+        $schemaList = SwaggerHelper::getAnnotationXValue($operation, self::X_SCHEMA);
+        if ($schemaList === null) {
+            return null;
         }
-        if (!is_array($value)) {
-            throw new \InvalidArgumentException(sprintf('Value of `x.%s` must be a string or array of strings', self::REF));
+        if (is_string($schemaList) || $schemaList instanceof AnSchema) {
+            $schemaList = [$schemaList];
         }
-        return $value;
+        if (!is_array($schemaList)) {
+            throw new \InvalidArgumentException(sprintf('operation path %s, value of `x.%s` type error', $operation->path, self::X_SCHEMA));
+        }
+        return array_map(function ($schema) use ($operation): AnSchema {
+            if (is_string($schema)) {
+                // 字符串的形式
+                $class = $schema;
+                $classMethod = null;
+                if (str_contains($schema, '@')) {
+                    // $class@method 的形式
+                    [$class] = $classMethod = explode('@', $schema);
+                }
+                $schema = $this->analysis->getSchemaForSource($class);
+                if (!$schema instanceof AnSchema) {
+                    throw new \InvalidArgumentException(sprintf('Class `%s` not exists, in operation path %s', $class, $operation->path));
+                }
+                if ($classMethod) {
+                    SwaggerHelper::setAnnotationXValue($schema, self::X_SCHEMA_CLASS_METHOD, $classMethod);
+                }
+            }
+            if (!$schema instanceof AnSchema) {
+                throw new \InvalidArgumentException(sprintf('operation path %s, value of `x.%s` type error', $operation->path, self::X_SCHEMA));
+            }
+            return $schema;
+        }, $schemaList);
     }
 
-    private function expand(AnOperation $operation, AnSchema $schema): void
+    private function addXInProperties(AnOperation $operation, AnSchema $schema): void
     {
-        if (!Generator::isDefault($schema->allOf)) {
-            // support allOf
-            foreach ($schema->allOf as $itemSchema) {
-                $this->expand($operation, $itemSchema);
+        // allOf 的逐个处理掉
+        if ($allOf = SwaggerHelper::getValue($schema->allOf)) {
+            foreach ($allOf as $allOfItem) {
+                $this->addXInProperties($operation, $allOfItem);
             }
         }
-
+        // schema 是 ref 的情况下，取到真实的 schema
         if (!Generator::isDefault($schema->ref)) {
-            // support ref
-            $refSchema = $this->analysis->openapi?->ref((string)$schema->ref);
-            if (!$refSchema instanceof AnSchema) {
-                throw new \InvalidArgumentException('ref must be a schema reference');
-            }
-            $this->expand($operation, $refSchema);
+            $schema = $this->analysis->getSchemaForSource($schema->_context->fullyQualifiedName($schema->_context->class));
         }
-
-        if (Generator::isDefault($schema->properties) || !$schema->properties) {
-            return;
+        // 添加到 operation 上
+        $xInProperties = XInPropertyDTO::getListFromSchema($schema);
+        foreach ($xInProperties as $xInProperty) {
+            $xInProperty->append2operation($operation);
         }
-
-        // 处理 x in
-        $propertiesIn = new \WeakMap();
-        foreach ($schema->properties as $property) {
-            // 处理 x in
-            $propertyIn = SwaggerHelper::getPropertyXValue($property, SchemaConstants::X_PROPERTY_IN);
-            // 获取默认的 in 的位置
-            if ($propertyIn === null) {
-                $propertyIn = match ($operation->method) {
-                    'get', 'head', 'options' => SchemaConstants::X_PROPERTY_IN_QUERY,
-                    default => SchemaConstants::X_PROPERTY_IN_JSON,
-                };
-            }
-            // 别名映射
-            if ($propertyIn === SchemaConstants::X_PROPERTY_IN_GET) {
-                $propertyIn = SchemaConstants::X_PROPERTY_IN_QUERY;
-            } elseif ($propertyIn === SchemaConstants::X_PROPERTY_IN_POST) {
-                $propertyIn = SchemaConstants::X_PROPERTY_IN_JSON;
-            }
-            $propertiesIn[$property] = $propertyIn;
-        }
-        // 检查所有 schema 的参数是否都在 json 中
-        $isAllPropertiesInJson = true;
-        foreach ($schema->properties as $property) {
-            if ($propertiesIn[$property] !== SchemaConstants::X_PROPERTY_IN_JSON) {
-                $isAllPropertiesInJson = false;
-                break;
-            }
-        }
-
-        if ($isAllPropertiesInJson) {
-            // 全部都在 json 中的，直接附加到 ref 上
-            $this->add2requestBodyJsonUseRef($operation, $schema);
-        } else {
-            // 根据 propertyIn 一个去处理
-            $schemaRequired = SwaggerHelper::getValue($schema->required, []);
-
-            foreach ($schema->properties as $property) {
-                $propertyIn = $propertiesIn[$property];
-
-                $isRequired = in_array($property->property, $schemaRequired, true);
-                $isNullable = SwaggerHelper::getValue($property->nullable);
-                $description = SwaggerHelper::getValue($property->description);
-
-                if (in_array($propertyIn, [
-                    SchemaConstants::X_PROPERTY_IN_COOKIE,
-                    SchemaConstants::X_PROPERTY_IN_HEADER,
-                    SchemaConstants::X_PROPERTY_IN_PATH,
-                    SchemaConstants::X_PROPERTY_IN_QUERY,
-                ], true)) {
-                    // 转为 Parameter
-                    $schemaNew = SwaggerHelper::renewSchemaWithProperty($property);
-                    $schemaNew->_context = $operation->_context; // inherit context from operation, required to pretend to be a parameter
-
-                    $parameter = new Parameter(
-                        name: $property->property,
-                        description: $description,
-                        in: $propertyIn,
-                        required: $isRequired,
-                        example: $property->example,
-                    );
-                    $parameter->schema = $schemaNew;
-                    $parameter->_context = $operation->_context; // inherit context from operation, required to pretend to be a parameter
-
-                    $this->add2parameters($operation, $parameter);
-                } elseif ($propertyIn === SchemaConstants::X_PROPERTY_IN_JSON) {
-                    // 转为 JsonBody
-                    $schemaNew = $this->add2requestBodyJson($operation, $property);
-                    if ($isRequired) {
-                        if (Generator::isDefault($schemaNew->required)) {
-                            $schemaNew->required = [];
-                        }
-                        $schemaNew->required[] = $property->property;
-                    }
-                } elseif ($propertyIn === SchemaConstants::X_PROPERTY_IN_BODY) {
-                    // 转为 Body
-                    $schemaNew = new Schema(
-                        description: $description,
-                        type: 'string',
-                        format: 'binary',
-                        nullable: $isNullable,
-                    );
-
-                    $mediaType = $this->getRequestMediaType($operation, 'application/octect-stream');
-                    $mediaType->schema = $schemaNew;
-                } else {
-                    throw new \InvalidArgumentException(sprintf('Not support [%s] in `x.in`, class: [%s], property: [%s]', $propertyIn, $property->_context->class, $property->property));
-                }
-            }
-        }
-    }
-
-    private function add2parameters(AnOperation $operation, AnParameter $parameter): void
-    {
-        if (Generator::isDefault($operation->parameters)) {
-            $operation->parameters = [];
-        }
-        $operation->parameters[] = $parameter;
-    }
-
-    private function getRequestMediaType(AnOperation $operation, string $mediaType): AnMediaType
-    {
-        if (Generator::isDefault($operation->requestBody)) {
-            $operation->requestBody = new RequestBody();
-        }
-        if (Generator::isDefault($operation->requestBody->content)) {
-            $operation->requestBody->content = [];
-        }
-        if (!isset($operation->requestBody->content[$mediaType])) {
-            $operation->requestBody->content[$mediaType] = new MediaType(
-                mediaType: $mediaType,
-            );
-        }
-        return $operation->requestBody->content[$mediaType];
-    }
-
-    private function add2requestBodyJson(AnOperation $operation, AnProperty $property): AnSchema
-    {
-        $mediaType = $this->getRequestMediaType($operation, 'application/json');
-        if (Generator::isDefault($mediaType->schema)) {
-            $mediaType->schema = new Schema();
-        }
-        $schema = $mediaType->schema;
-        if (Generator::isDefault($schema->properties)) {
-            $schema->properties = [];
-        }
-        $schema->properties[] = $property;
-
-        return $schema;
     }
 
     private function add2requestBodyJsonUseRef(AnOperation $operation, AnSchema $schema): void
     {
-        $mediaType = $this->getRequestMediaType($operation, 'application/json');
-        if (Generator::isDefault($mediaType->schema)) {
-            $mediaType->schema = new Schema();
-        }
-        $mediaType->schema->ref = Components::ref($schema);
+        $mediaType = SwaggerHelper::getOperationRequestBodyMediaType($operation, 'application/json');
+        SwaggerHelper::appendSchema2mediaType($mediaType, $schema);
     }
 
-    private function add2responseXSchemaResponse(AnOperation $operation, string $class, string $method): void
+    private function add2parametersUseSchema(AnOperation $operation, AnSchema $schema, PropertyInEnum $propertyIn): void
     {
-        if (Generator::isDefault($operation->x)) {
-            $operation->x = [];
+        $parameters = array_merge(
+            SwaggerHelper::getValue($operation->parameters, []),
+            $this->transferSchemaProperties2parameters($schema, $operation->_context, $propertyIn),
+        );
+        $operation->parameters = $parameters;
+    }
+
+    private function transferSchemaProperties2parameters(AnSchema $schema, Context $context, PropertyInEnum $propertyIn): array
+    {
+        $parameters = [];
+        // allOf 的逐个转化
+        if ($allOf = SwaggerHelper::getValue($schema->allOf)) {
+            foreach ($allOf as $allOfItem) {
+                $parameters = array_merge(
+                    $parameters,
+                    $this->transferSchemaProperties2parameters($allOfItem, $context, $propertyIn),
+                );
+            }
         }
-        $responseXSchemaResponseKey = XSchemaResponseProcessor::REF;
-        if (isset($operation->x[$responseXSchemaResponseKey])) {
+        // properties 的逐个转化
+        $schemaRequired = SwaggerHelper::getValue($schema->required, []);
+        foreach (SwaggerHelper::getValue($schema->properties, []) as $property) {
+            /** @var AnProperty $property */
+            $parameters[] = SwaggerHelper::renewParameterWithProperty(
+                property: $property,
+                in: $propertyIn->toParameterIn(),
+                required: in_array($property->property, $schemaRequired, true),
+            );
+        }
+
+        return $parameters;
+    }
+
+    private function add2responseXSchemaResponse(AnOperation $operation, array $classMethod): void
+    {
+        $value = SwaggerHelper::getAnnotationXValue($operation, SchemaConstants::X_SCHEMA_RESPONSE);
+        if ($value) {
             // 如果已经定义过，则不覆盖
             return;
         }
 
+        [$class, $method] = $classMethod;
         $reflectionClass = new \ReflectionClass($class);
         $reflectionMethod = $reflectionClass->getMethod($method);
         $reflectionReturnType = $reflectionMethod->getReturnType();
@@ -253,15 +178,6 @@ final class XSchemaRequestProcessor
             throw new \InvalidArgumentException("{$class}@{$method} 必须定义返回类型，且唯一");
         }
 
-        $operation->x[$responseXSchemaResponseKey] = $reflectionReturnType->getName();
-    }
-
-    private function cleanUp(AnOperation $operation): void
-    {
-        unset($operation->x[self::REF]);
-        if (!$operation->x) {
-            /* @phpstan-ignore-next-line */
-            $operation->x = Generator::UNDEFINED;
-        }
+        SwaggerHelper::setAnnotationXValue($operation, SchemaConstants::X_SCHEMA_RESPONSE, $reflectionReturnType->getName());
     }
 }

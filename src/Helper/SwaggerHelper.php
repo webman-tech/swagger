@@ -3,8 +3,17 @@
 namespace WebmanTech\Swagger\Helper;
 
 use OpenApi\Annotations\AbstractAnnotation;
+use OpenApi\Annotations\Header as AnHeader;
+use OpenApi\Annotations\MediaType as AnMediaType;
+use OpenApi\Annotations\Operation as AnOperation;
+use OpenApi\Annotations\Parameter as AnParameter;
 use OpenApi\Annotations\Property as AnProperty;
+use OpenApi\Annotations\Response as AnResponse;
 use OpenApi\Annotations\Schema as AnSchema;
+use OpenApi\Attributes\Components;
+use OpenApi\Attributes\MediaType;
+use OpenApi\Attributes\RequestBody;
+use OpenApi\Attributes\Schema;
 use OpenApi\Generator;
 
 /**
@@ -122,35 +131,50 @@ final class SwaggerHelper
 //    }
 
     /**
-     * 获取 property 的 x 属性
+     * 获取 annotation 上的 x 的某个属性
      */
-    public static function getPropertyXValue(AnProperty $property, string $key): mixed
+    public static function getAnnotationXValue(AbstractAnnotation $annotation, string $key, $default = null): mixed
     {
         $value = null;
-        if (!Generator::isDefault($property->x) && array_key_exists($key, $property->x)) {
-            $value = $property->x[$key];
+        if (!Generator::isDefault($annotation->x) && array_key_exists($key, $annotation->x)) {
+            $value = $annotation->x[$key];
         }
-        return $value;
+        return $value ?? $default;
     }
 
     /**
-     * 设置 property 的 x 属性
+     * 设置 annotation 上的 x 的某个属性
      */
-    public static function setPropertyXValue(AnProperty $property, string $key, $value): void
+    public static function setAnnotationXValue(AbstractAnnotation $annotation, string $key, $value): void
     {
-        if (Generator::isDefault($property->x)) {
-            $property->x = [];
+        if (Generator::isDefault($annotation->x)) {
+            $annotation->x = [];
         }
-        $property->x[$key] = $value;
+        $annotation->x[$key] = $value;
+    }
+
+    /**
+     * 移除 annotation 上的 x 的某个属性
+     */
+    public static function removeAnnotationXValue(AbstractAnnotation $annotation, string $key): void
+    {
+        if (!Generator::isDefault($annotation->x) && array_key_exists($key, $annotation->x)) {
+            unset($annotation->x[$key]);
+            if (!$annotation->x) {
+                $annotation->x = Generator::UNDEFINED;
+            }
+        }
     }
 
     /**
      * 通过 property 构造一个 Schema
-     * @param class-string<AnSchema> $schemaClass
+     * @template T of AnSchema
+     * @param class-string<T> $schemaClass
+     * @return T
      */
     public static function renewSchemaWithProperty(AnProperty $property, string $schemaClass = AnSchema::class): AnSchema
     {
-        return new $schemaClass(array_filter([
+        $schema = new $schemaClass(array_filter([
             'description' => SwaggerHelper::getValue($property->description),
             'type' => SwaggerHelper::getValue($property->type),
             'format' => SwaggerHelper::getValue($property->format),
@@ -166,5 +190,121 @@ final class SwaggerHelper
             'nullable' => SwaggerHelper::getValue($property->nullable),
             'additionalProperties' => SwaggerHelper::getValue($property->additionalProperties),
         ], fn($item) => $item !== null));
+        $schema->_context = $property->_context;
+        return $schema;
+    }
+
+    /**
+     * 通过 property 构造一个 Parameter
+     */
+    public static function renewParameterWithProperty(AnProperty $property, string $in, bool $required, bool $isForParameterRef = false): AnParameter
+    {
+        $schema = SwaggerHelper::renewSchemaWithProperty($property);
+        $schema->_context = $property->_context;
+
+        $parameter = new AnParameter(array_filter([
+            'name' => $property->property,
+            'description' => SwaggerHelper::getValue($property->description),
+            'in' => $in,
+            'required' => $required,
+            'example' => SwaggerHelper::getValue($property->example),
+            'examples' => SwaggerHelper::getValue($property->examples),
+            'schema' => $schema,
+        ]));
+        if ($isForParameterRef) {
+            // 作为 ref 使用时，该参数必须
+            $parameter->parameter = $parameter->name;
+        }
+        $parameter->_context = $property->_context;
+
+        return $parameter;
+    }
+
+    /**
+     * 通过 property 构造一个 Header
+     */
+    public static function renewHeaderWithProperty(AnProperty $property, bool $required): AnHeader
+    {
+        $schema = SwaggerHelper::renewSchemaWithProperty($property);
+        $schema->_context = $property->_context;
+
+        $header = new AnHeader(array_filter([
+            'header' => $property->property,
+            'description' => SwaggerHelper::getValue($property->description),
+            'required' => $required,
+            'schema' => $schema,
+        ]));
+        $header->_context = $property->_context;
+
+        return $header;
+    }
+
+    /**
+     * 获取 operation 上的某个 mediaType
+     */
+    public static function getOperationRequestBodyMediaType(AnOperation $operation, string $mediaType): AnMediaType
+    {
+        if (Generator::isDefault($operation->requestBody)) {
+            $operation->requestBody = new RequestBody();
+        }
+        if (Generator::isDefault($operation->requestBody->content)) {
+            $operation->requestBody->content = [];
+        }
+        if (!isset($operation->requestBody->content[$mediaType])) {
+            $operation->requestBody->content[$mediaType] = new MediaType(
+                mediaType: $mediaType,
+            );
+        }
+        return $operation->requestBody->content[$mediaType];
+    }
+
+    /**
+     * 获取 response 上的某个 mediaType
+     */
+    public static function getResponseMediaType(AnResponse $response, string $mediaType): AnMediaType
+    {
+        if (Generator::isDefault($response->content)) {
+            $response->content = [];
+        }
+        if (!isset($response->content[$mediaType])) {
+            $response->content[$mediaType] = new MediaType(
+                mediaType: $mediaType,
+            );
+        }
+        return $response->content[$mediaType];
+    }
+
+    /**
+     * 将 schema 添加到 mediaType
+     */
+    public static function appendSchema2mediaType(AnMediaType $mediaType, AnSchema $schema): void
+    {
+        $isMediaTypeSchemaEmpty = false;
+        if (Generator::isDefault($mediaType->schema)) {
+            $mediaType->schema = new Schema();
+            $isMediaTypeSchemaEmpty = true;
+        }
+        // 附加用的 schema，如果可以用 ref 的话，使用 ref
+        $appendSchema = $schema;
+        if (!Generator::isDefault($schema->schema)) {
+            $appendSchema = new Schema(ref: Components::ref($schema));
+        }
+        // mediaType 的 schema 是空的话，直接附加
+        if ($isMediaTypeSchemaEmpty) {
+            $mediaType->schema = $appendSchema;
+            return;
+        }
+        // mediaType 的 schema 不为空，需要调整为 allOf
+        $allOf = SwaggerHelper::getValue($mediaType->schema->allOf);
+        if ($allOf === null) {
+            // 原来不是 allOf 的情况，把 mediaType 的 schema 放入 allOf 中
+            $allOf[] = clone $mediaType->schema;
+        }
+        // 补上需要添加的 schema
+        $allOf[] = $appendSchema;
+        // 设置到 mediaType 上
+        $mediaType->schema->allOf = $allOf;
+        $mediaType->schema->properties = Generator::UNDEFINED;
+        $mediaType->schema->ref = Generator::UNDEFINED;
     }
 }

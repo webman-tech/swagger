@@ -51,7 +51,7 @@ final class OpenapiController
             $generator = (new Generator($config))->init();
             $config->applyGenerator($generator);
 
-            $openapi = $this->scanAndGenerateOpenapi($generator, $config->scan_path, $config->scan_exclude);
+            $openapi = $this->scanAndGenerateOpenapi($generator, $config->scan_path, $config->scan_exclude, validate: $config->openapi_validate);
             $config->applyModify($openapi);
 
             $result = $config->generateWithFormat($openapi);
@@ -67,7 +67,13 @@ final class OpenapiController
      * 扫描并生成 yaml
      * @throws Throwable
      */
-    private function scanAndGenerateOpenapi(Generator $generator, array|string $scanPath, array|string|null $scanExclude = null, int $errorCount = 0): OA\OpenApi
+    private function scanAndGenerateOpenapi(
+        Generator         $generator,
+        array|string      $scanPath,
+        array|string|null $scanExclude = null,
+        bool              $validate = false,
+        bool              $isRescan = false,
+    ): OA\OpenApi
     {
         $requiredElements = $this->requiredElements;
 
@@ -78,35 +84,37 @@ final class OpenapiController
             $scanPath = array_values($requiredElements);
         }
 
-        try {
-            $openapi = $generator->generate(
-                Finder::create()
-                    ->files()
-                    ->followLinks()
-                    ->name('*.php')
-                    ->in($scanPath)
-                    ->notPath($scanExclude ?? []),
-            );
-            if ($openapi === null) {
-                throw new \Exception('openapi generate failed');
-            }
-            return $openapi;
-        } catch (Throwable $e) {
-            if ($errorCount > count($requiredElements)) {
-                throw $e;
-            }
-
-            // http://zircote.github.io/swagger-php/guide/required-elements.html
-            if ($e->getMessage() === 'Required @OA\Info() not found') {
-                $scanPath = array_merge($scanPath, [$requiredElements['info']]);
-                return $this->scanAndGenerateOpenapi($generator, $scanPath, $scanExclude, $errorCount + 1);
-            }
-            if ($e->getMessage() === 'Required @OA\PathItem() not found') {
-                $scanPath = array_merge($scanPath, [$requiredElements['pathItem']]);
-                return $this->scanAndGenerateOpenapi($generator, $scanPath, $scanExclude, $errorCount + 1);
-            }
-
-            throw $e;
+        $openapi = $generator->generate(
+            Finder::create()
+                ->files()
+                ->followLinks()
+                ->name('*.php')
+                ->in($scanPath)
+                ->notPath($scanExclude ?? []),
+            validate: false, // 固定为关闭，在后面再执行验证
+        );
+        if ($openapi === null) {
+            throw new \Exception('openapi generate failed');
         }
+        if (!$isRescan) {
+            // 首次扫描后检查必须的元素是否存在，不存在的话再次扫描
+            $requiredScan = [];
+            if (Generator::isDefault($openapi->info)) {
+                $requiredScan[] = $requiredElements['info'];
+            }
+            if (Generator::isDefault($openapi->paths)) {
+                $requiredScan[] = $requiredElements['pathItem'];
+            }
+            if ($requiredScan) {
+                $scanPath = array_merge($scanPath, $requiredScan);
+                $openapi = $this->scanAndGenerateOpenapi($generator, $scanPath, $scanExclude, validate: false, isRescan: true);
+            }
+        }
+
+        if ($validate) {
+            $openapi->validate();
+        }
+
+        return $openapi;
     }
 }

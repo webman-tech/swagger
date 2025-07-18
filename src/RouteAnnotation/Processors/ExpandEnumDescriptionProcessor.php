@@ -14,7 +14,7 @@ use WebmanTech\Swagger\Helper\SwaggerHelper;
  * @link https://github.com/zircote/swagger-php/issues/1661
  * @link https://github.com/DerManoMann/openapi-extras/blob/main/src/Processors/EnumDescription.php
  */
-final readonly class EnumDescriptionProcessor
+final readonly class ExpandEnumDescriptionProcessor
 {
     public function __construct(
         private bool    $enabled = true,
@@ -44,6 +44,9 @@ final readonly class EnumDescriptionProcessor
                 if (is_a($className, \BackedEnum::class, true)) {
                     foreach ($schema->enum as $item) {
                         $case = $className::tryFrom($item);
+                        if (!$case) {
+                            continue;
+                        }
                         $itemDescription = method_exists($case, $this->descriptionMethod) ? $case->{$this->descriptionMethod}() : $case->name;
                         if ($this->isValueEqDescription($item, $itemDescription)) {
                             continue;

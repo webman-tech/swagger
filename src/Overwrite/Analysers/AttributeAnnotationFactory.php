@@ -54,6 +54,9 @@ class AttributeAnnotationFactory extends \OpenApi\Analysers\AttributeAnnotationF
 
         $schema = new Schema();
         $schema->_context = $this->buildContext;
+        if (is_a($reflector->getName(), \BackedEnum::class, true)) {
+            $schema->type = is_a($reflector->getName(), \IntBackedEnum::class, true) ? 'integer' : 'string';
+        }
         return $schema;
     }
 

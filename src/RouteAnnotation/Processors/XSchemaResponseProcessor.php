@@ -3,27 +3,26 @@
 namespace WebmanTech\Swagger\RouteAnnotation\Processors;
 
 use OpenApi\Analysis;
-use OpenApi\Annotations\Header as AnHeader;
-use OpenApi\Annotations\MediaType as AnMediaType;
 use OpenApi\Annotations\Operation as AnOperation;
 use OpenApi\Annotations\Property as AnProperty;
 use OpenApi\Annotations\Response as AnResponse;
 use OpenApi\Annotations\Schema as AnSchema;
-use OpenApi\Attributes\Components;
 use OpenApi\Attributes\Header;
-use OpenApi\Attributes\MediaType;
 use OpenApi\Attributes\Response;
 use OpenApi\Attributes\Schema;
+use OpenApi\Context;
 use OpenApi\Generator;
 use WebmanTech\Swagger\DTO\SchemaConstants;
+use WebmanTech\Swagger\Enums\PropertyInEnum;
 use WebmanTech\Swagger\Helper\SwaggerHelper;
+use WebmanTech\Swagger\RouteAnnotation\DTO\XInPropertyDTO;
 
 /**
  * 将定义的 schema 转为 response 上
  */
 final class XSchemaResponseProcessor
 {
-    public const REF = SchemaConstants::X_SCHEMA_RESPONSE;
+    private const X_SCHEMA = SchemaConstants::X_SCHEMA_RESPONSE;
 
     private Analysis $analysis;
 
@@ -34,140 +33,79 @@ final class XSchemaResponseProcessor
         $operations = $analysis->getAnnotationsOfType(AnOperation::class);
 
         foreach ($operations as $operation) {
-            if (!Generator::isDefault($operation->x) && array_key_exists(self::REF, $operation->x)) {
-                $value = $this->normalizeSchemaArray($operation->x[self::REF]);
-
-                foreach ($value as $statusCode => $classList) {
-                    foreach ($classList as $class) {
-                        $schema = $analysis->getSchemaForSource($class);
-                        if (!$schema instanceof AnSchema) {
-                            throw new \InvalidArgumentException(sprintf('Value of `x.%s.%s` must be a schema reference', self::REF, $class));
-                        }
-
-                        $this->expand($operation, $statusCode, $schema);
+            $schemaList = $this->getNormalizedSchemaValues($operation);
+            if ($schemaList === null) {
+                continue;
+            }
+            $propertyDefaultIn = PropertyInEnum::Json;
+            foreach ($schemaList as $statusCode => $schemas) {
+                $response = $this->getResponse($operation, $statusCode);
+                foreach ($schemas as $schema) {
+                    // 根据 property in 所在的地方，将数据转移到不同上面
+                    $propertyIn = PropertyInEnum::tryFromSchemaX($schema, $propertyDefaultIn);
+                    // 将 schema 上的 x-in-property 放到对应位置
+                    $this->addXInProperties($response, $schema);
+                    if ($propertyIn === PropertyInEnum::Json) {
+                        // json 的添加到 requestBody 上
+                        $this->add2responseBodyJsonUseRef($response, $schema);
+                    } elseif ($propertyIn === PropertyInEnum::Header) {
+                        // header
+                        $this->add2responseHeadersUseSchema($response, $schema);
+                    } elseif ($propertyIn === PropertyInEnum::Body) {
+                        // body 的
+                        $this->add2responseBodyUseSchema($response, $schema);
                     }
                 }
-
-                $this->cleanUp($operation);
             }
+
+            SwaggerHelper::removeAnnotationXValue($operation, self::X_SCHEMA);
         }
     }
 
-    private function normalizeSchemaArray($value): array
+    /**
+     * @return array<int, Schema[]>|null
+     */
+    private function getNormalizedSchemaValues(AnOperation $operation): ?array
     {
-        if (is_string($value)) {
-            // 单 string
-            $value = [$value];
+        $schemaList = SwaggerHelper::getAnnotationXValue($operation, self::X_SCHEMA);
+        if ($schemaList === null) {
+            return null;
         }
-        if (isset($value[0])) {
+        if (is_string($schemaList) || $schemaList instanceof AnSchema) {
+            // 单 string 或 Schema
+            $schemaList = [$schemaList];
+        }
+        if (!is_array($schemaList)) {
+            throw new \InvalidArgumentException(sprintf('operation path %s, value of `x.%s` type error', $operation->path, self::X_SCHEMA));
+        }
+        if (isset($schemaList[0])) {
             // index 数组
-            $value = [200 => $value];
+            $schemaList = [200 => $schemaList];
         }
-        return array_map(function ($itemValue) {
-            if (is_string($itemValue)) {
-                return [$itemValue];
+        // 将所有 code => [] 或 code => '' 形式的转为 code => []
+        $schemaList = array_map(function ($item) use ($operation): array {
+            if (is_string($item) || $item instanceof AnSchema) {
+                $item = [$item];
             }
-            return $itemValue;
-        }, $value);
-    }
-
-    private function expand(AnOperation $operation, int $statusCode, AnSchema $schema): void
-    {
-        if (!Generator::isDefault($schema->allOf)) {
-            // support allOf
-            foreach ($schema->allOf as $itemSchema) {
-                $this->expand($operation, $statusCode, $itemSchema);
-            }
-        }
-
-        if (!Generator::isDefault($schema->ref)) {
-            // support ref
-            $refSchema = $this->analysis->openapi?->ref((string)$schema->ref);
-            if (!$refSchema instanceof AnSchema) {
-                throw new \InvalidArgumentException('ref must be a schema reference');
-            }
-            $this->expand($operation, $statusCode, $refSchema);
-        }
-
-        if (Generator::isDefault($schema->properties) || !$schema->properties) {
-            return;
-        }
-
-        // 处理 x in
-        $propertiesIn = new \WeakMap();
-        foreach ($schema->properties as $property) {
-            // 处理 x in
-            $propertyIn = SwaggerHelper::getPropertyXValue($property, SchemaConstants::X_PROPERTY_IN);
-            // 获取默认的 in 的位置
-            if ($propertyIn === null) {
-                $propertyIn = SchemaConstants::X_PROPERTY_IN_JSON;
-            }
-            $propertiesIn[$property] = $propertyIn;
-        }
-        // 检查所有 schema 的参数是否都在 json 中
-        $isAllPropertiesInJson = true;
-        foreach ($schema->properties as $property) {
-            if ($propertiesIn[$property] !== SchemaConstants::X_PROPERTY_IN_JSON) {
-                $isAllPropertiesInJson = false;
-                break;
-            }
-        }
-
-        $response = $this->getResponse($operation, $statusCode);
-
-        if ($isAllPropertiesInJson) {
-            // 全部都在 json 中的，直接附加到 ref 上
-            $this->add2responseBodyJsonUseRef($response, $schema);
-        } else {
-            // 根据 propertyIn 一个去处理
-            $schemaRequired = SwaggerHelper::getValue($schema->required, []);
-
-            foreach ($schema->properties as $property) {
-                $propertyIn = $propertiesIn[$property];
-
-                $isRequired = in_array($property->property, $schemaRequired, true);
-                $isNullable = SwaggerHelper::getValue($property->nullable);
-                $description = SwaggerHelper::getValue($property->description);
-
-                if ($propertyIn === SchemaConstants::X_PROPERTY_IN_HEADER) {
-                    // 转为 Header
-                    $schemaNew = SwaggerHelper::renewSchemaWithProperty($property);
-                    $schemaNew->_context = $operation->_context; // inherit context from operation, required to pretend to be a parameter
-
-                    $header = new Header(
-                        header: $property->property,
-                        description: $description,
-                        required: $isRequired,
-                    );
-                    $header->schema = $schemaNew;
-                    $header->_context = $operation->_context; // inherit context from operation, required to pretend to be a parameter
-
-                    $this->add2headers($response, $header);
-                } elseif ($propertyIn === SchemaConstants::X_PROPERTY_IN_JSON) {
-                    // 转为 JsonBody
-                    $schemaNew = $this->add2responseBodyJson($response, $property);
-                    if ($isRequired) {
-                        if (Generator::isDefault($schemaNew->required)) {
-                            $schemaNew->required = [];
-                        }
-                        $schemaNew->required[] = $property->property;
+            return $item;
+        }, $schemaList);
+        // 将所有的子项 string 转为 Schema
+        return array_map(function ($schemaList) use ($operation): array {
+            return array_map(function ($schema) use ($operation): AnSchema {
+                if (is_string($schema)) {
+                    // 字符串的形式
+                    $class = $schema;
+                    $schema = $this->analysis->getSchemaForSource($class);
+                    if (!$schema instanceof AnSchema) {
+                        throw new \InvalidArgumentException(sprintf('Class `%s` not exists, in operation path %s', $class, $operation->path));
                     }
-                } elseif ($propertyIn === SchemaConstants::X_PROPERTY_IN_BODY) {
-                    // 转为 Body
-                    $schemaNew = new Schema(
-                        description: $description,
-                        type: 'string',
-                        format: 'binary',
-                        nullable: $isNullable,
-                    );
-
-                    $mediaType = $this->getResponseMediaType($response, 'application/octect-stream');
-                    $mediaType->schema = $schemaNew;
-                } else {
-                    throw new \InvalidArgumentException(sprintf('Not support [%s] in `x.in`, class: [%s], property: [%s]', $propertyIn, $property->_context->class, $property->property));
                 }
-            }
-        }
+                if (!$schema instanceof AnSchema) {
+                    throw new \InvalidArgumentException(sprintf('operation path %s, value of `x.%s` type error', $operation->path, self::X_SCHEMA));
+                }
+                return $schema;
+            }, $schemaList);
+        }, $schemaList);
     }
 
     private function getResponse(AnOperation $operation, int $statusCode): AnResponse
@@ -184,67 +122,81 @@ final class XSchemaResponseProcessor
         return $operation->responses[$statusCode];
     }
 
-    private function getResponseMediaType(AnResponse $response, string $mediaType): AnMediaType
+    private function addXInProperties(AnResponse $response, AnSchema $schema): void
     {
-        if (Generator::isDefault($response->content)) {
-            $response->content = [];
+        // allOf 的逐个处理掉
+        if ($allOf = SwaggerHelper::getValue($schema->allOf)) {
+            foreach ($allOf as $allOfItem) {
+                $this->addXInProperties($response, $allOfItem);
+            }
         }
-        if (!isset($response->content[$mediaType])) {
-            $response->content[$mediaType] = new MediaType(
-                mediaType: $mediaType,
-            );
+        // schema 是 ref 的情况下，取到真实的 schema
+        if (!Generator::isDefault($schema->ref)) {
+            $schema = $this->analysis->getSchemaForSource($schema->_context->fullyQualifiedName($schema->_context->class));
         }
-        return $response->content[$mediaType];
-    }
-
-    private function add2headers(AnResponse $response, AnHeader $header): void
-    {
-        if (Generator::isDefault($response->headers)) {
-            $response->headers = [];
+        // 添加到 response 上
+        $xInProperties = XInPropertyDTO::getListFromSchema($schema);
+        foreach ($xInProperties as $xInProperty) {
+            $xInProperty->append2response($response);
         }
-        $response->headers[] = $header;
-    }
-
-    private function add2responseBodyJson(AnResponse $response, AnProperty $property): AnSchema
-    {
-        $mediaType = $this->getResponseMediaType($response, 'application/json');
-        if (Generator::isDefault($mediaType->schema)) {
-            $mediaType->schema = new Schema();
-        }
-        $schema = $mediaType->schema;
-        if (Generator::isDefault($schema->properties)) {
-            $schema->properties = [];
-        }
-        $schema->properties[] = $property;
-
-        return $schema;
     }
 
     private function add2responseBodyJsonUseRef(AnResponse $response, AnSchema $schema): void
     {
-        $mediaType = $this->getResponseMediaType($response, 'application/json');
-        if (Generator::isDefault($mediaType->schema)) {
-            $mediaType->schema = new Schema();
-        }
-        if (Generator::isDefault($mediaType->schema->ref)) {
-            $mediaType->schema->ref = Components::ref($schema);
-        } else {
-            if (Generator::isDefault($mediaType->schema->allOf)) {
-                $mediaType->schema->allOf = [
-                    clone $mediaType->schema,
-                ];
-                $mediaType->schema->ref = Generator::UNDEFINED;
-            }
-            $mediaType->schema->allOf[] = new Schema(ref: Components::ref($schema));
-        }
+        $mediaType = SwaggerHelper::getResponseMediaType($response, 'application/json');
+        SwaggerHelper::appendSchema2mediaType($mediaType, $schema);
     }
 
-    private function cleanUp(AnOperation $operation): void
+    private function add2responseHeadersUseSchema(AnResponse $response, AnSchema $schema): void
     {
-        unset($operation->x[self::REF]);
-        if (!$operation->x) {
-            /* @phpstan-ignore-next-line */
-            $operation->x = Generator::UNDEFINED;
+        $headers = array_merge(
+            SwaggerHelper::getValue($response->headers, []),
+            $this->transferSchemaProperties2headers($schema, $response->_context),
+        );
+        $response->headers = $headers;
+    }
+
+    private function transferSchemaProperties2headers(AnSchema $schema, Context $context): array
+    {
+        $headers = [];
+        if ($allOf = SwaggerHelper::getValue($schema->allOf)) {
+            foreach ($allOf as $allOfItem) {
+                $headers = array_merge($headers, $this->transferSchemaProperties2headers($allOfItem, $context));
+            }
+        } elseif (SwaggerHelper::getValue($schema->oneOf)) {
+            // 不支持存在 oneOf 的转为 headers
+            throw new \InvalidArgumentException('Not support use oneOf');
         }
+
+        $schemaRequired = SwaggerHelper::getValue($schema->required, []);
+        foreach (SwaggerHelper::getValue($schema->properties, []) as $property) {
+            /** @var AnProperty $property */
+            $headerSchema = SwaggerHelper::renewSchemaWithProperty($property);
+            $headerSchema->_context = $context;
+
+            $header = new Header(
+                header: $property->property,
+                description: SwaggerHelper::getValue($property->description),
+                required: in_array($property->property, $schemaRequired, true),
+            );
+            $header->schema = $headerSchema;
+            $header->_context = $context;
+            $headers[] = $header;
+        }
+
+        return $headers;
+    }
+
+    private function add2responseBodyUseSchema(AnResponse $response, AnSchema $schema): void
+    {
+        $mediaSchema = new Schema(
+            description: SwaggerHelper::getValue($schema->description),
+            type: 'string',
+            format: 'binary',
+            nullable: SwaggerHelper::getValue($schema->nullable),
+        );
+
+        $mediaType = SwaggerHelper::getResponseMediaType($response, 'application/octect-stream');
+        $mediaType->schema = $mediaSchema;
     }
 }

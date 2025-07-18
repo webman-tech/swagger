@@ -91,14 +91,16 @@ final class Generator extends \OpenApi\Generator
                     ->add(new RouteAnnotation\Processors\ExpandEloquentModelProcessor(
                         enabled: $this->openapiDocConfig->expand_eloquent_model_enable,
                     ))
-                    ->add(new RouteAnnotation\Processors\DTOValidationRulesProcessor())
+                    ->add(new RouteAnnotation\Processors\ExpandDTOAttributionsProcessor())
                     ->add(new RouteAnnotation\Processors\MergeClassInfoProcessor())
-                    ->add(new RouteAnnotation\Processors\EnumDescriptionProcessor(
+                    ->add(new RouteAnnotation\Processors\ExpandEnumDescriptionProcessor(
                             enabled: $this->openapiDocConfig->schema_enum_description_enable,
                             descriptionMethod: $this->openapiDocConfig->schema_enum_description_method ?? 'description')
                     )
+                    ->add(new RouteAnnotation\Processors\XSchemaPropertyInProcessor())
                     ->add(new RouteAnnotation\Processors\XSchemaRequestProcessor())
                     ->add(new RouteAnnotation\Processors\XSchemaResponseProcessor())
+                    ->add(new RouteAnnotation\Processors\XSchemaCleanProcessor())
                     ->add(new RouteAnnotation\Processors\AppendResponseProcessor())
                     ->add(new RouteAnnotation\Processors\XRouteCleanProcessor())
                     ->add(new OAProcessors\CleanUnusedComponents(

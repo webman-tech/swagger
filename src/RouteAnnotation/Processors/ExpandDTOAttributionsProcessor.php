@@ -11,15 +11,18 @@ use OpenApi\Attributes\Items;
 use OpenApi\Attributes\Property;
 use OpenApi\Attributes\Schema;
 use OpenApi\Generator;
+use WebmanTech\DTO\Attributes\RequestPropertyIn;
 use WebmanTech\DTO\Attributes\ValidationRules;
 use WebmanTech\DTO\BaseDTO;
 use WebmanTech\DTO\Reflection\ReflectionReaderFactory;
+use WebmanTech\Swagger\DTO\SchemaConstants;
+use WebmanTech\Swagger\Enums\PropertyInEnum;
 use WebmanTech\Swagger\Helper\SwaggerHelper;
 
 /**
- * 将 DTO 中的 ValidationRules 信息附加到 Schema 上
+ * 将 DTO 中的注解信息附加到 Schema 上
  */
-final class DTOValidationRulesProcessor
+final class ExpandDTOAttributionsProcessor
 {
     private Analysis $analysis;
 
@@ -39,33 +42,31 @@ final class DTOValidationRulesProcessor
                 continue;
             }
             if (!Generator::isDefault($schema->properties)) {
+                $factory = ReflectionReaderFactory::fromClass($className);
                 $schemaRequired = SwaggerHelper::getValue($schema->required, []);
                 foreach ($schema->properties as $property) {
-                    $validationRules = $this->getPropertyValidationRules($className, $property);
-                    if ($validationRules === null) {
+                    $propertyName = $property->_context->property;
+                    if (!$propertyName) {
+                        $propertyName = SwaggerHelper::getValue($property->property);
+                    }
+                    if (!$propertyName) {
                         continue;
                     }
-                    $this->fillPropertyByItsAttributions($property, $validationRules, $schemaRequired);
+                    // 使用 ValidationRules 补充
+                    if ($attribution = $factory->getAttributionValidationRules($propertyName)) {
+                        $this->fillPropertyByValidationRules($property, $attribution, $schemaRequired);
+                    }
+                    // 使用 RequestPropertyIn 补充
+                    if ($attribution = $factory->getAttributionRequestPropertyIn($propertyName)) {
+                        $this->fillPropertyByRequestPropertyIn($property, $attribution);
+                    }
                 }
                 $schema->required = $schemaRequired ?: Generator::UNDEFINED;
             }
         }
     }
 
-    private function getPropertyValidationRules(string $className, AnProperty $property): ?ValidationRules
-    {
-        $propertyName = $property->_context->property;
-        if (!$propertyName) {
-            $propertyName = SwaggerHelper::getValue($property->property);
-        }
-        if (!$propertyName) {
-            return null;
-        }
-
-        return ReflectionReaderFactory::fromClass($className)->getPublicPropertyValidationRules($propertyName);
-    }
-
-    private function fillPropertyByItsAttributions(AnProperty $property, ValidationRules $validationRules, array &$schemaRequired): void
+    private function fillPropertyByValidationRules(AnProperty $property, ValidationRules $validationRules, array &$schemaRequired): void
     {
         if (Generator::isDefault($property->type)) {
             $property->type = match (true) {
@@ -103,7 +104,7 @@ final class DTOValidationRulesProcessor
                 if ($validationRules->arrayItem instanceof ValidationRules) {
                     $newProperty = new Property();
                     $newRequired = [];
-                    $this->fillPropertyByItsAttributions($newProperty, $validationRules->arrayItem, $newRequired);
+                    $this->fillPropertyByValidationRules($newProperty, $validationRules->arrayItem, $newRequired);
                     $schemaItems = SwaggerHelper::renewSchemaWithProperty($newProperty, AnItems::class);
                     $schemaItems->required = $newRequired ?: Generator::UNDEFINED;
                 } elseif (is_string($validationRules->arrayItem) && class_exists($validationRules->arrayItem)) {
@@ -115,5 +116,14 @@ final class DTOValidationRulesProcessor
             }
         }
         // enum 和 object，Swagger 会自行处理
+    }
+
+    private function fillPropertyByRequestPropertyIn(AnProperty $property, RequestPropertyIn $requestPropertyIn): void
+    {
+        if ($requestPropertyIn->name) {
+            $property->property = $requestPropertyIn->name;
+        }
+        $xPropertyInValue = PropertyInEnum::tryFromDTORequestPropertyIn($requestPropertyIn->getInEnum())->value;
+        SwaggerHelper::setAnnotationXValue($property, SchemaConstants::X_PROPERTY_IN, $xPropertyInValue);
     }
 }

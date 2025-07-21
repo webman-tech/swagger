@@ -5,6 +5,7 @@ namespace WebmanTech\Swagger\DTO;
 use Closure;
 use OpenApi\Annotations\OpenApi;
 use OpenApi\Generator;
+use Symfony\Component\Finder\Finder;
 use WebmanTech\DTO\BaseConfigDTO;
 use WebmanTech\DTO\BaseDTO;
 use WebmanTech\Swagger\Helper\ConfigHelper;
@@ -12,7 +13,7 @@ use WebmanTech\Swagger\Helper\ConfigHelper;
 final class ConfigOpenapiDocDTO extends BaseConfigDTO
 {
     public function __construct(
-        public string|array        $scan_path = [], // 扫描的目录
+        public string|iterable     $scan_path = [], // 扫描的目录
         public null|array          $scan_exclude = null, // 扫描忽略的
         public null|Closure        $generator_modify = null, // 修改 $generator 对象
         public null|Closure        $modify = null, // 修改 $openapi 对象
@@ -42,6 +43,33 @@ final class ConfigOpenapiDocDTO extends BaseConfigDTO
     protected static function getAppConfig(): array
     {
         return ConfigHelper::get('app.openapi_doc', []);
+    }
+
+    public function getScanSources(): iterable
+    {
+        $scanPaths = $this->scan_path;
+        if (is_string($scanPaths)) {
+            $scanPaths = [$scanPaths];
+        }
+        // 区分 files 和 path
+        $files = [];
+        foreach ($scanPaths as $index => $path) {
+            if (is_file($path)) {
+                $files[] = $path;
+                unset($scanPaths[$index]);
+            }
+        }
+        $scanPaths = array_values($scanPaths);
+
+        return [
+            $files,
+            Finder::create()
+                ->files()
+                ->followLinks()
+                ->name('*.php')
+                ->in($scanPaths)
+                ->notPath($this->scan_exclude ?? []),
+        ];
     }
 
     public function getCacheKey(): string

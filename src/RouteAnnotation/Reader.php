@@ -47,13 +47,11 @@ final class Reader
      * 通过 swagger 文档读取路由信息
      * @return array<string, RouteConfigDTO>
      */
-    public function getData(array|string $pathOrFile): array
+    public function getData(iterable $sources): array
     {
         $analysis = new Analysis([], $this->context);
 
-        foreach ($this->formatPath($pathOrFile) as $file) {
-            $analysis->addAnalysis($this->analyser->fromFile($file->getRealPath(), $this->context));
-        }
+        $this->scanSources($sources, $analysis);
 
         $this->generator->getProcessorPipeline()->process($analysis);
         $openapi = $analysis->openapi;
@@ -82,24 +80,30 @@ final class Reader
         return $data;
     }
 
-    /**
-     * @return \SplFileInfo[]|Finder
-     */
-    private function formatPath(array|string $pathOrFile): array|Finder
+    private function scanSources(iterable $sources, Analysis $analysis): void
     {
-        if (is_string($pathOrFile)) {
-            if (is_file($pathOrFile)) {
-                return [
-                    new \SplFileInfo($pathOrFile)
-                ];
+        foreach ($sources as $source) {
+            if (is_iterable($source)) {
+                $this->scanSources($source, $analysis);
+            } else {
+                $resolvedSource = $source instanceof \SplFileInfo ? $source->getPathname() : realpath($source);
+                if (!$resolvedSource) {
+                    continue;
+                }
+                if (is_dir($resolvedSource)) {
+                    $this->scanSources(
+                        Finder::create()
+                            ->in($resolvedSource)
+                            ->files()
+                            ->followLinks()
+                            ->name('*.php'),
+                        $analysis,
+                    );
+                } else {
+                    $analysis->addAnalysis($this->analyser->fromFile($resolvedSource, $this->context));
+                }
             }
-            if (!is_dir($pathOrFile)) {
-                throw new \InvalidArgumentException(sprintf('"%s" is not a valid path or file', $pathOrFile));
-            }
-            $pathOrFile = [$pathOrFile];
         }
-
-        return Finder::create()->files()->in($pathOrFile)->name('*.php');
     }
 
     private function parseRouteConfig(OA\Operation $operation): RouteConfigDTO

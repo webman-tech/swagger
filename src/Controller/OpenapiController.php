@@ -51,7 +51,7 @@ final class OpenapiController
             $generator = (new Generator($config))->init();
             $config->applyGenerator($generator);
 
-            $openapi = $this->scanAndGenerateOpenapi($generator, $config->scan_path, $config->scan_exclude, validate: $config->openapi_validate);
+            $openapi = $this->scanAndGenerateOpenapi($generator, $config->getScanSources(), validate: $config->openapi_validate);
             $config->applyModify($openapi);
 
             $result = $config->generateWithFormat($openapi);
@@ -68,29 +68,14 @@ final class OpenapiController
      * @throws Throwable
      */
     private function scanAndGenerateOpenapi(
-        Generator         $generator,
-        array|string      $scanPath,
-        array|string|null $scanExclude = null,
-        bool              $validate = false,
-        bool              $isRescan = false,
+        Generator $generator,
+        iterable  $scanSources,
+        bool      $validate = false,
+        bool      $isRescan = false,
     ): OA\OpenApi
     {
-        $requiredElements = $this->requiredElements;
-
-        if (is_string($scanPath)) {
-            $scanPath = [$scanPath];
-        }
-        if (!$scanPath) {
-            $scanPath = array_values($requiredElements);
-        }
-
         $openapi = $generator->generate(
-            Finder::create()
-                ->files()
-                ->followLinks()
-                ->name('*.php')
-                ->in($scanPath)
-                ->notPath($scanExclude ?? []),
+            $scanSources,
             validate: false, // 固定为关闭，在后面再执行验证
         );
         if ($openapi === null) {
@@ -100,14 +85,22 @@ final class OpenapiController
             // 首次扫描后检查必须的元素是否存在，不存在的话再次扫描
             $requiredScan = [];
             if (Generator::isDefault($openapi->info)) {
-                $requiredScan[] = $requiredElements['info'];
+                $requiredScan[] = $this->requiredElements['info'];
             }
             if (Generator::isDefault($openapi->paths)) {
-                $requiredScan[] = $requiredElements['pathItem'];
+                $requiredScan[] = $this->requiredElements['pathItem'];
             }
             if ($requiredScan) {
-                $scanPath = array_merge($scanPath, $requiredScan);
-                $openapi = $this->scanAndGenerateOpenapi($generator, $scanPath, $scanExclude, validate: false, isRescan: true);
+                $openapi = $this->scanAndGenerateOpenapi(
+                    $generator,
+                    [
+                        $scanSources,
+                        Finder::create()
+                            ->in($requiredScan),
+                    ],
+                    validate: false,
+                    isRescan: true,
+                );
             }
         }
 

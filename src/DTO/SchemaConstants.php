@@ -30,6 +30,11 @@ final class SchemaConstants
      * 将 schema 转到 response 上
      */
     public const X_SCHEMA_RESPONSE = 'schema-response';
+    /**
+     * response layout
+     */
+    public const X_RESPONSE_LAYOUT = 'response-layout';
+    public const X_RESPONSE_LAYOUT_DATA_CODE = 'response-layout-data-code';
 
     /**
      * OA\Property 的 x 中使用的 in 参数名

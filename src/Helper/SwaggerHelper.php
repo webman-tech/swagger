@@ -57,13 +57,16 @@ final class SwaggerHelper
     /**
      * 获取 annotation 上的 x 的某个属性
      */
-    public static function getAnnotationXValue(AbstractAnnotation $annotation, string $key, $default = null): mixed
+    public static function getAnnotationXValue(AbstractAnnotation $annotation, string $key, $default = null, bool $remove = false): mixed
     {
-        $value = null;
         if (!Generator::isDefault($annotation->x) && array_key_exists($key, $annotation->x)) {
             $value = $annotation->x[$key];
+            if ($remove) {
+                SwaggerHelper::removeAnnotationXValue($annotation, $key);
+            }
+            return $value;
         }
-        return $value ?? $default;
+        return $default;
     }
 
     /**

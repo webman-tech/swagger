@@ -2,6 +2,7 @@
 
 namespace WebmanTech\Swagger\RouteAnnotation\DTO;
 
+use OpenApi\Analysis;
 use OpenApi\Annotations\Operation as AnOperation;
 use OpenApi\Annotations\Property as AnProperty;
 use OpenApi\Annotations\Response as AnResponse;
@@ -75,7 +76,7 @@ final class XInPropertyDTO
     /**
      * 将相关信息设置到 Operation 上
      */
-    public function append2operation(AnOperation $operation): void
+    public function append2operation(AnOperation $operation, Analysis $analysis): void
     {
         if (in_array($this->in, PropertyInEnum::REQUEST_PARAMETERS, true)) {
             // 转化为 parameter
@@ -108,14 +109,14 @@ final class XInPropertyDTO
                     ),
                 ],
             );
-            SwaggerHelper::appendSchema2mediaType($mediaType, $schema);
+            SwaggerHelper::appendSchema2mediaType($mediaType, $schema, $analysis);
         }
     }
 
     /**
      * 将相关信息设置到 Response 上
      */
-    public function append2response(AnResponse $response): void
+    public function append2response(AnResponse $response, Analysis $analysis): void
     {
         if ($this->in === PropertyInEnum::Header) {
             // 转化为 header
@@ -149,7 +150,7 @@ final class XInPropertyDTO
                     ),
                 ],
             );
-            SwaggerHelper::appendSchema2mediaType($mediaType, $schema);
+            SwaggerHelper::appendSchema2mediaType($mediaType, $schema, $analysis);
         }
     }
 

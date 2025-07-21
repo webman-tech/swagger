@@ -9,8 +9,10 @@ use OpenApi\Attributes as OA;
  */
 final class OpenapiSpec
 {
+    public const EXAMPLE_PATH = '/__example';
+
     #[OA\Get(
-        path: '/example',
+        path: self::EXAMPLE_PATH,
         description: 'Will be deleted automatically when adding a new api interface',
         summary: 'Zero configuration example',
         responses: [

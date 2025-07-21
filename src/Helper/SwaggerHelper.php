@@ -2,6 +2,7 @@
 
 namespace WebmanTech\Swagger\Helper;
 
+use OpenApi\Analysis;
 use OpenApi\Annotations\AbstractAnnotation;
 use OpenApi\Annotations\Header as AnHeader;
 use OpenApi\Annotations\MediaType as AnMediaType;
@@ -205,7 +206,7 @@ final class SwaggerHelper
     /**
      * 将 schema 添加到 mediaType
      */
-    public static function appendSchema2mediaType(AnMediaType $mediaType, AnSchema $schema): void
+    public static function appendSchema2mediaType(AnMediaType $mediaType, AnSchema $schema, Analysis $analysis): void
     {
         $isMediaTypeSchemaEmpty = false;
         if (Generator::isDefault($mediaType->schema)) {
@@ -215,7 +216,12 @@ final class SwaggerHelper
         // 附加用的 schema，如果可以用 ref 的话，使用 ref
         $appendSchema = $schema;
         if (!Generator::isDefault($schema->schema)) {
-            $appendSchema = new Schema(ref: Components::ref($schema));
+            $refSchema = $analysis->getSchemaForSource(SwaggerHelper::getAnnotationClassName($schema));
+            if ($refSchema) {
+                $appendSchema = new Schema(ref: Components::ref($schema));
+            } else {
+                $appendSchema->schema = Generator::UNDEFINED; // 存在 schema 名的话，会影响 swagger-UI 的展示
+            }
         }
         // mediaType 的 schema 是空的话，直接附加
         if ($isMediaTypeSchemaEmpty) {

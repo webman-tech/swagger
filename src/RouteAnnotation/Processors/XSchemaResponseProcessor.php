@@ -140,14 +140,14 @@ final class XSchemaResponseProcessor
         // 添加到 response 上
         $xInProperties = XInPropertyDTO::getListFromSchema($schema);
         foreach ($xInProperties as $xInProperty) {
-            $xInProperty->append2response($response);
+            $xInProperty->append2response($response, $this->analysis);
         }
     }
 
     private function add2responseBodyJsonUseRef(AnResponse $response, AnSchema $schema): void
     {
         $mediaType = SwaggerHelper::getResponseMediaType($response, 'application/json');
-        SwaggerHelper::appendSchema2mediaType($mediaType, $schema);
+        SwaggerHelper::appendSchema2mediaType($mediaType, $schema, $this->analysis);
     }
 
     private function add2responseHeadersUseSchema(AnResponse $response, AnSchema $schema): void

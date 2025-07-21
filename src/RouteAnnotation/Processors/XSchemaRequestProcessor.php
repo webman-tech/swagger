@@ -120,14 +120,14 @@ final class XSchemaRequestProcessor
         // 添加到 operation 上
         $xInProperties = XInPropertyDTO::getListFromSchema($schema);
         foreach ($xInProperties as $xInProperty) {
-            $xInProperty->append2operation($operation);
+            $xInProperty->append2operation($operation, $this->analysis);
         }
     }
 
     private function add2requestBodyJsonUseRef(AnOperation $operation, AnSchema $schema): void
     {
         $mediaType = SwaggerHelper::getOperationRequestBodyMediaType($operation, 'application/json');
-        SwaggerHelper::appendSchema2mediaType($mediaType, $schema);
+        SwaggerHelper::appendSchema2mediaType($mediaType, $schema, $this->analysis);
     }
 
     private function add2parametersUseSchema(AnOperation $operation, AnSchema $schema, PropertyInEnum $propertyIn): void

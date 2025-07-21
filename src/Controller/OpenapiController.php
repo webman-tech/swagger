@@ -3,8 +3,8 @@
 namespace WebmanTech\Swagger\Controller;
 
 use OpenApi\Annotations as OA;
-use Symfony\Component\Finder\Finder;
 use Throwable;
+use WebmanTech\Swagger\Controller\RequiredElementsAttributes\PathItem\OpenapiSpec;
 use WebmanTech\Swagger\DTO\ConfigOpenapiDocDTO;
 use WebmanTech\Swagger\DTO\ConfigSwaggerUiDTO;
 use WebmanTech\Swagger\Helper\JsExpression;
@@ -31,7 +31,7 @@ final class OpenapiController
         $config = ConfigSwaggerUiDTO::fromConfig($config);
 
         $data = $config->data;
-        $data['ui_config']['url'] = new JsExpression("window.location.pathname + '/{$docRoute}'");
+        $data['ui_config']['url'] = new JsExpression("window.location.pathname.replace(/\/+$/, '') + '/{$docRoute}'");
 
         return Response::create()->renderView($config->view, $data, $config->view_path);
     }
@@ -71,37 +71,23 @@ final class OpenapiController
         Generator $generator,
         iterable  $scanSources,
         bool      $validate = false,
-        bool      $isRescan = false,
     ): OA\OpenApi
     {
         $openapi = $generator->generate(
-            $scanSources,
+            [
+                $this->requiredElements,
+                $scanSources,
+            ],
             validate: false, // 固定为关闭，在后面再执行验证
         );
         if ($openapi === null) {
             throw new \Exception('openapi generate failed');
         }
-        if (!$isRescan) {
-            // 首次扫描后检查必须的元素是否存在，不存在的话再次扫描
-            $requiredScan = [];
-            if (Generator::isDefault($openapi->info)) {
-                $requiredScan[] = $this->requiredElements['info'];
-            }
-            if (Generator::isDefault($openapi->paths)) {
-                $requiredScan[] = $this->requiredElements['pathItem'];
-            }
-            if ($requiredScan) {
-                $openapi = $this->scanAndGenerateOpenapi(
-                    $generator,
-                    [
-                        $scanSources,
-                        Finder::create()
-                            ->in($requiredScan),
-                    ],
-                    validate: false,
-                    isRescan: true,
-                );
-            }
+        if (count($openapi->paths) > 1) {
+            // 表示已经有接口了，移除掉默认的必须路径
+            $openapi->paths = array_filter($openapi->paths, function (OA\PathItem $pathItem) {
+                return $pathItem->path !== OpenapiSpec::EXAMPLE_PATH;
+            });
         }
 
         if ($validate) {

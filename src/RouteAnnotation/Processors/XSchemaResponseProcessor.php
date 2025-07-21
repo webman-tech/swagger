@@ -134,6 +134,9 @@ final class XSchemaResponseProcessor
         if (!Generator::isDefault($schema->ref)) {
             $schema = $this->analysis->getSchemaForSource($schema->_context->fullyQualifiedName($schema->_context->class));
         }
+        if (!$schema) {
+            return;
+        }
         // 添加到 response 上
         $xInProperties = XInPropertyDTO::getListFromSchema($schema);
         foreach ($xInProperties as $xInProperty) {

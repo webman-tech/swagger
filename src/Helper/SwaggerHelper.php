@@ -55,82 +55,6 @@ final class SwaggerHelper
     }
 
     /**
-     * 根据 className 和 propertyName 获取 property 的 ref
-     */
-//    public static function getPropertyRefByClassNameAndPropertyName(Analysis $analysis, string|AnSchema $schema, string $propertyName): ?string
-//    {
-//        if (is_string($schema)) {
-//            $schema = $analysis->getSchemaForSource($schema);
-//            if (!$schema) {
-//                return null;
-//            }
-//        }
-//
-//        $fnGetSchemaName = function (AnSchema $schema) {
-//            if (Generator::isDefault($schema->schema)) {
-//                return self::className2schemaName(self::getAnnotationClassName($schema));
-//            }
-//            return $schema->schema;
-//        };
-//
-//        $fnFindPropertyInSchema = function (AnSchema $schema, string $propertyName, ?string $prefix = null) use ($fnGetSchemaName, &$fnFindPropertyInSchema, $analysis) {
-//            if (!Generator::isDefault($schema->properties)) {
-//                $traits = [];
-//                $hasTraitAllOf = false;
-//                foreach ($schema->properties as $property) {
-//                    $thisPropertyIsInTrait = false;
-//                    if ($property->_context->trait) {
-//                        $hasTraitAllOf = true;
-//                        $thisPropertyIsInTrait = true;
-//                        $key = $property->_context->namespace . $property->_context->trait;
-//                        $traits[$key] = 1;
-//                    }
-//                    if ($property->property === $propertyName) {
-//                        $name = $prefix;
-//                        if ($name === null) {
-//                            if ($thisPropertyIsInTrait) {
-//                                $name = $fnGetSchemaName($property);
-//                            } else {
-//                                $name = $fnGetSchemaName($schema);
-//                            }
-//                        }
-//                        if (!$thisPropertyIsInTrait && $hasTraitAllOf) {
-//                            $name .= '/allOf/[' . count($traits) . ']';
-//                        }
-//                        return $name . '/properties/' . $property->property;
-//                    }
-//                }
-//            }
-//            if (!Generator::isDefault($schema->ref)) {
-//                $refSchema = self::getSchemaBySchemaRef($schema->ref, $analysis);
-//                if ($refSchema) {
-//                    $name = $fnFindPropertyInSchema($refSchema, $propertyName);
-//                    if ($name) {
-//                        return $name;
-//                    }
-//                }
-//            }
-//            if (!Generator::isDefault($schema->allOf)) {
-//                foreach ($schema->allOf as $index => $item) {
-//                    $name = $fnFindPropertyInSchema($item, $propertyName, $fnGetSchemaName($schema) . "/allOf/[$index]");
-//                    if ($name) {
-//                        return $name;
-//                    }
-//                }
-//            }
-//
-//            return '';
-//        };
-//
-//        $name = $fnFindPropertyInSchema($schema, $propertyName);
-//        if (!$name) {
-//            return null;
-//        }
-//
-//        return Components::SCHEMA_REF . $name;
-//    }
-
-    /**
      * 获取 annotation 上的 x 的某个属性
      */
     public static function getAnnotationXValue(AbstractAnnotation $annotation, string $key, $default = null): mixed
@@ -175,6 +99,7 @@ final class SwaggerHelper
     public static function renewSchemaWithProperty(AnProperty $property, string $schemaClass = AnSchema::class): AnSchema
     {
         $schema = new $schemaClass(array_filter([
+            'ref' => SwaggerHelper::getValue($property->ref),
             'description' => SwaggerHelper::getValue($property->description),
             'type' => SwaggerHelper::getValue($property->type),
             'format' => SwaggerHelper::getValue($property->format),

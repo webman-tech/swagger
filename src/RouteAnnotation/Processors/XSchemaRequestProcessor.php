@@ -112,7 +112,10 @@ final class XSchemaRequestProcessor
         }
         // schema 是 ref 的情况下，取到真实的 schema
         if (!Generator::isDefault($schema->ref)) {
-            $schema = $this->analysis->getSchemaForSource($schema->_context->fullyQualifiedName($schema->_context->class));
+            $schema = $this->analysis->getSchemaForSource(SwaggerHelper::getAnnotationClassName($schema));
+        }
+        if (!$schema) {
+            return;
         }
         // 添加到 operation 上
         $xInProperties = XInPropertyDTO::getListFromSchema($schema);
@@ -148,6 +151,15 @@ final class XSchemaRequestProcessor
                 );
             }
         }
+        // schema 是 ref 的情况下，取到真实的 schema
+        if (!Generator::isDefault($schema->ref)) {
+            $schema = $this->analysis->getSchemaForSource(SwaggerHelper::getAnnotationClassName($schema));
+            if ($schema) {
+                $parameters = $this->transferSchemaProperties2parameters($schema, $context, $propertyIn);
+            }
+            return $parameters;
+        }
+
         // properties 的逐个转化
         $schemaRequired = SwaggerHelper::getValue($schema->required, []);
         foreach (SwaggerHelper::getValue($schema->properties, []) as $property) {

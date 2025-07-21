@@ -18,7 +18,7 @@ final class ConfigOpenapiDocDTO extends BaseConfigDTO
         public null|Closure        $modify = null, // 修改 $openapi 对象
         public null|string|Closure $cache_key = null, // 缓存用的 key，当注册不同实例时，需要指定不同的 key，或者做热更新用
         public string              $format = 'yaml', // yaml/json
-        public bool                $openapi_validate = true, // 是否校验产出的 openapi 文档
+        public null|bool           $openapi_validate = null, // 是否校验产出的 openapi 文档
         public null|true|Closure   $schema_name_format_use_classname = null, // schema 的名称是否使用完整的类名（swagger-php 默认取类的名字，不带 namespace）
         public bool                $schema_enum_description_enable = true, // 提取 enum 的描述信息开关
         public null                $schema_enum_description_method = null, // 指定提取 enum 的描述信息的方法名
@@ -28,7 +28,12 @@ final class ConfigOpenapiDocDTO extends BaseConfigDTO
     )
     {
         if ($this->auto_load_schema_classes === null) {
-            $this->auto_load_schema_classes = [BaseDTO::class, \UnitEnum::class];
+            $this->auto_load_schema_classes = [BaseDTO::class];
+        }
+        if ($this->openapi_validate === null) {
+            // 暂时默认不开启校验，由于以下 issue 问题
+            // https://github.com/zircote/swagger-php/pull/1776
+            $this->openapi_validate = false;
         }
     }
 

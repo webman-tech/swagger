@@ -89,7 +89,7 @@ final class XSchemaRequestProcessor
                 }
                 $schema = $this->analysis->getSchemaForSource($class);
                 if (!$schema instanceof AnSchema) {
-                    throw new \InvalidArgumentException(sprintf('Class `%s` not exists, in operation path %s', $class, $operation->path));
+                    throw new \InvalidArgumentException(sprintf('Class `%s` not exists, in %s', $class, $operation->_context));
                 }
                 if ($classMethod) {
                     SwaggerHelper::setAnnotationXValue($schema, self::X_SCHEMA_CLASS_METHOD, $classMethod);

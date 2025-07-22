@@ -102,7 +102,6 @@ final class Generator extends \OpenApi\Generator
                     ->add(new RouteAnnotation\Processors\XSchemaResponseProcessor())
                     ->add(new RouteAnnotation\Processors\XSchemaCleanProcessor())
                     ->add(new RouteAnnotation\Processors\AppendResponseProcessor())
-                    ->add(new RouteAnnotation\Processors\AppendResponseProcessor())
                     ->add(new RouteAnnotation\Processors\ResponseLayoutProcessor(
                         layoutClass: $this->openapiDocConfig->response_layout_class,
                         layoutDataCode: $this->openapiDocConfig->response_layout_data_code,

@@ -24,6 +24,7 @@ final class OpenapiController
     }
 
     /**
+     * Swagger UI 页面展示
      * @throws Throwable
      */
     public function swaggerUI(string $docRoute, ConfigSwaggerUiDTO|array $config = [])
@@ -39,6 +40,7 @@ final class OpenapiController
     private static array $docCache = [];
 
     /**
+     * Openapi 文档
      * @throws Throwable
      */
     public function openapiDoc(ConfigOpenapiDocDTO|array $config = [])

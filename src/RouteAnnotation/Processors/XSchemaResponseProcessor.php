@@ -94,10 +94,16 @@ final class XSchemaResponseProcessor
             return array_map(function ($schema) use ($operation): AnSchema {
                 if (is_string($schema)) {
                     // 字符串的形式
-                    $class = $schema;
-                    $schema = $this->analysis->getSchemaForSource($class);
-                    if (!$schema instanceof AnSchema) {
-                        throw new \InvalidArgumentException(sprintf('Class `%s` not exists, in operation path %s', $class, $operation->path));
+                    if (class_exists($schema) || trait_exists($schema) || interface_exists($schema)) {
+                        $class = $schema;
+                        $schema = $this->analysis->getSchemaForSource($class);
+                        if (!$schema instanceof AnSchema) {
+                            throw new \InvalidArgumentException(sprintf('Class `%s` not exists, in %s', $class, $operation->_context));
+                        }
+                    } else {
+                        $schema = new Schema(
+                            description: $schema,
+                        );
                     }
                 }
                 if (!$schema instanceof AnSchema) {

@@ -16,14 +16,17 @@ use WebmanTech\Swagger\Helper\SwaggerHelper;
  */
 final readonly class ExpandEnumDescriptionProcessor
 {
+    private string $descriptionMethod;
+
     public function __construct(
-        private bool    $enabled = true,
-        private ?string $descriptionMethod = 'description',
+        private bool $enabled = true,
+        null|string  $descriptionMethod = null,
     )
     {
+        $this->descriptionMethod = $descriptionMethod ?? 'description';
     }
 
-    public function __invoke(Analysis $analysis)
+    public function __invoke(Analysis $analysis): void
     {
         if (!$this->enabled) {
             return;
@@ -48,7 +51,7 @@ final readonly class ExpandEnumDescriptionProcessor
                             continue;
                         }
                         $itemDescription = method_exists($case, $this->descriptionMethod) ? $case->{$this->descriptionMethod}() : $case->name;
-                        if ($this->isValueEqDescription($item, $itemDescription)) {
+                        if ($this->isValueEqDescription((string)$item, $itemDescription)) {
                             continue;
                         }
                         $caseDesc[] = "- {$item}: {$itemDescription}";

@@ -28,7 +28,7 @@ final class Response
             }
             if ($factory instanceof ResponseInterface) {
                 self::$factory = $factory;
-            } elseif (class_exists($factory)) {
+            } elseif (class_exists($factory) && is_a($factory, ResponseInterface::class, true)) {
                 self::$factory = new $factory();
             } else {
                 throw new InvalidArgumentException('response_factory error');

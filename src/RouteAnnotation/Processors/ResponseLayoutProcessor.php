@@ -56,12 +56,12 @@ final class ResponseLayoutProcessor
             if (!$response) {
                 continue;
             }
-            /** @var AnMediaType $mediaType */
+            /** @var AnMediaType|null $mediaType */
             $mediaType = $response->content['application/json'] ?? null;
             if (!$mediaType) {
                 continue;
             }
-            $schema = $mediaType->schema;
+            $schema = SwaggerHelper::getValue($mediaType->schema);
             if (!$schema) {
                 continue;
             }
@@ -119,14 +119,15 @@ final class ResponseLayoutProcessor
                 ],
             );
         } elseif (!Generator::isDefault($schema->properties)) {
+            $property = new Property(
+                property: $layoutDataCode,
+                required: Generator::isDefault($schema->required) ? null : $schema->required,
+                type: 'object',
+            );
+            $property->properties = $schema->properties;
             $newSchema = new Schema(
                 properties: [
-                    new Property(
-                        property: $layoutDataCode,
-                        required: Generator::isDefault($schema->required) ? null : $schema->required,
-                        properties: (array)$schema->properties,
-                        type: 'object',
-                    )
+                    $property,
                 ],
             );
         } elseif (!Generator::isDefault($schema->items) && $schema->items instanceof Items) {

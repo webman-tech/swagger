@@ -54,6 +54,7 @@ final class Generator extends \OpenApi\Generator
 
     public function init(): self
     {
+        /** @phpstan-ignore-next-line */
         return $this
             ->setAliases(self::DEFAULT_ALIASES)
             ->setNamespaces(self::DEFAULT_NAMESPACES)
@@ -95,7 +96,7 @@ final class Generator extends \OpenApi\Generator
                     ->add(new RouteAnnotation\Processors\MergeClassInfoProcessor())
                     ->add(new RouteAnnotation\Processors\ExpandEnumDescriptionProcessor(
                             enabled: $this->openapiDocConfig->schema_enum_description_enable,
-                            descriptionMethod: $this->openapiDocConfig->schema_enum_description_method ?? 'description')
+                            descriptionMethod: $this->openapiDocConfig->schema_enum_description_method)
                     )
                     ->add(new RouteAnnotation\Processors\XSchemaPropertyInProcessor())
                     ->add(new RouteAnnotation\Processors\XSchemaRequestProcessor())

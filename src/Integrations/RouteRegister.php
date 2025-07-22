@@ -28,7 +28,7 @@ final class RouteRegister
             }
             if ($factory instanceof RouteRegisterInterface) {
                 self::$factory = $factory;
-            } elseif (class_exists($factory)) {
+            } elseif (class_exists($factory) && is_a($factory, RouteRegisterInterface::class, true)) {
                 self::$factory = new $factory();
             } else {
                 throw new InvalidArgumentException('route_factory error');

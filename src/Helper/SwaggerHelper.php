@@ -24,16 +24,32 @@ final class SwaggerHelper
 {
     /**
      * 获取值
+     * @template T
+     * @template K of mixed
+     * @param T $value
+     * @param K $default
+     * @return T|K
      */
-    public static function getValue($value, $default = null)
+    public static function getValue(mixed $value, mixed $default = null): mixed
     {
         return Generator::isDefault($value) ? $default : $value;
     }
 
     /**
+     * @template T of mixed
+     * @param T $key
+     * @param T $value
+     */
+    public static function setValue(mixed &$key, mixed $value): void
+    {
+        /** @phpstan-ignore-next-line */
+        $key = $value ?: Generator::UNDEFINED;
+    }
+
+    /**
      * 获取 注解 的 class 的名称
      */
-    public static function getAnnotationClassName(AbstractAnnotation $annotation): ?string
+    public static function getAnnotationClassName(AbstractAnnotation $annotation): string
     {
         if ($annotation->_context->is('class')) {
             $className = $annotation->_context->fullyQualifiedName($annotation->_context->class);
@@ -58,7 +74,7 @@ final class SwaggerHelper
     /**
      * 获取 annotation 上的 x 的某个属性
      */
-    public static function getAnnotationXValue(AbstractAnnotation $annotation, string $key, $default = null, bool $remove = false): mixed
+    public static function getAnnotationXValue(AbstractAnnotation $annotation, string $key, mixed $default = null, bool $remove = false): mixed
     {
         if (!Generator::isDefault($annotation->x) && array_key_exists($key, $annotation->x)) {
             $value = $annotation->x[$key];
@@ -73,7 +89,7 @@ final class SwaggerHelper
     /**
      * 设置 annotation 上的 x 的某个属性
      */
-    public static function setAnnotationXValue(AbstractAnnotation $annotation, string $key, $value): void
+    public static function setAnnotationXValue(AbstractAnnotation $annotation, string $key, mixed $value): void
     {
         if (Generator::isDefault($annotation->x)) {
             $annotation->x = [];
@@ -89,6 +105,7 @@ final class SwaggerHelper
         if (!Generator::isDefault($annotation->x) && array_key_exists($key, $annotation->x)) {
             unset($annotation->x[$key]);
             if (!$annotation->x) {
+                /** @phpstan-ignore-next-line */
                 $annotation->x = Generator::UNDEFINED;
             }
         }
@@ -238,7 +255,9 @@ final class SwaggerHelper
         $allOf[] = $appendSchema;
         // 设置到 mediaType 上
         $mediaType->schema->allOf = $allOf;
+        /** @phpstan-ignore-next-line */
         $mediaType->schema->properties = Generator::UNDEFINED;
+        /** @phpstan-ignore-next-line */
         $mediaType->schema->ref = Generator::UNDEFINED;
     }
 }

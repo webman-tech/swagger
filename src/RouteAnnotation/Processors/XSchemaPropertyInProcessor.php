@@ -6,7 +6,6 @@ use OpenApi\Analysis;
 use OpenApi\Annotations\Components;
 use OpenApi\Annotations\Property as AnProperty;
 use OpenApi\Annotations\Schema as AnSchema;
-use OpenApi\Generator;
 use WebmanTech\Swagger\DTO\SchemaConstants;
 use WebmanTech\Swagger\Enums\PropertyInEnum;
 use WebmanTech\Swagger\Helper\SwaggerHelper;
@@ -31,12 +30,14 @@ class XSchemaPropertyInProcessor
     {
         $refPrefix ??= Components::ref($schema);
         foreach (SwaggerHelper::getValue($schema->allOf, []) as $index => $item) {
+            /** @phpstan-ignore-next-line */
             if (!$item instanceof AnSchema) {
                 continue;
             }
             $this->transferPropertyIn($item, Components::ref($schema) . '/allOf/' . $index);
         }
         foreach (SwaggerHelper::getValue($schema->oneOf, []) as $index => $item) {
+            /** @phpstan-ignore-next-line */
             if (!$item instanceof AnSchema) {
                 continue;
             }
@@ -73,7 +74,7 @@ class XSchemaPropertyInProcessor
             $xPropertyIn->set2Schema();
         }
         // 更新变更字段
-        $schema->required = $schemaRequired ?: Generator::UNDEFINED;
-        $schema->properties = $properties ?: Generator::UNDEFINED;
+        SwaggerHelper::setValue($schema->required, $schemaRequired);
+        SwaggerHelper::setValue($schema->properties, $properties);
     }
 }

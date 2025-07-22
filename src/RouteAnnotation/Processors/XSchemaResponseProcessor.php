@@ -63,7 +63,7 @@ final class XSchemaResponseProcessor
     }
 
     /**
-     * @return array<int, Schema[]>|null
+     * @return array<int, AnSchema[]>|null
      */
     private function getNormalizedSchemaValues(AnOperation $operation): ?array
     {
@@ -86,6 +86,9 @@ final class XSchemaResponseProcessor
         $schemaList = array_map(function ($item) use ($operation): array {
             if (is_string($item) || $item instanceof AnSchema) {
                 $item = [$item];
+            }
+            if (!is_array($item)) {
+                throw new \InvalidArgumentException(sprintf('operation path %s, value of `x.%s` type error', $operation->path, self::X_SCHEMA));
             }
             return $item;
         }, $schemaList);

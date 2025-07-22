@@ -12,13 +12,19 @@ use OpenApi\Annotations\Schema;
  */
 final class SortComponentsProcessor
 {
-    public function __invoke(Analysis $analysis)
+    public function __invoke(Analysis $analysis): void
     {
+        if (!$analysis->openapi) {
+            return;
+        }
+
+        /** @phpstan-ignore-next-line */
         if (is_object($analysis->openapi->components) && is_iterable($analysis->openapi->components->schemas)) {
             usort($analysis->openapi->components->schemas, function (Schema $a, Schema $b) {
                 return strcmp($a->schema, $b->schema);
             });
         }
+        /** @phpstan-ignore-next-line */
         if (is_iterable($analysis->openapi->paths)) {
             usort($analysis->openapi->paths, function (PathItem $a, PathItem $b) {
                 return strcmp($a->path, $b->path);

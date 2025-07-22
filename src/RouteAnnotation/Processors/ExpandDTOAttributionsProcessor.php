@@ -61,7 +61,7 @@ final class ExpandDTOAttributionsProcessor
                         $this->fillPropertyByRequestPropertyIn($property, $attribution);
                     }
                 }
-                $schema->required = $schemaRequired ?: Generator::UNDEFINED;
+                SwaggerHelper::setValue($schema->required, $schemaRequired);
             }
         }
     }
@@ -106,7 +106,7 @@ final class ExpandDTOAttributionsProcessor
                     $newRequired = [];
                     $this->fillPropertyByValidationRules($newProperty, $validationRules->arrayItem, $newRequired);
                     $schemaItems = SwaggerHelper::renewSchemaWithProperty($newProperty, AnItems::class);
-                    $schemaItems->required = $newRequired ?: Generator::UNDEFINED;
+                    SwaggerHelper::setValue($schemaItems->required, $newRequired);
                 } elseif (is_string($validationRules->arrayItem) && class_exists($validationRules->arrayItem)) {
                     if ($schemaNew = $this->analysis->getSchemaForSource($validationRules->arrayItem)) {
                         $schemaItems = new Items(ref: Components::ref($schemaNew));

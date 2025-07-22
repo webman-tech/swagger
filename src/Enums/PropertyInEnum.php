@@ -40,6 +40,7 @@ enum PropertyInEnum: string
             self::Get => self::Query,
             default => $case,
         };
+        /** @var PropertyInEnum $case */
         if ($enabledList !== null) {
             if (!in_array($case, $enabledList, true)) {
                 throw new \InvalidArgumentException(
@@ -72,7 +73,7 @@ enum PropertyInEnum: string
         ]);
     }
 
-    public static function tryFromDTORequestPropertyIn(RequestPropertyInEnum $requestPropertyInEnum): ?self
+    public static function tryFromDTORequestPropertyIn(RequestPropertyInEnum $requestPropertyInEnum): self
     {
         return match ($requestPropertyInEnum) {
             RequestPropertyInEnum::Query => self::Query,

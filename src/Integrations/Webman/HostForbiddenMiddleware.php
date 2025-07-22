@@ -9,11 +9,13 @@ use WebmanTech\Swagger\DTO\ConfigHostForbiddenDTO;
 
 final class HostForbiddenMiddleware implements MiddlewareInterface
 {
+    protected ConfigHostForbiddenDTO $config;
+
     public function __construct(
-        protected array|ConfigHostForbiddenDTO $config = []
+        array|ConfigHostForbiddenDTO $config = []
     )
     {
-        $this->config = ConfigHostForbiddenDTO::fromConfig($this->config);
+        $this->config = ConfigHostForbiddenDTO::fromConfig($config);
     }
 
     /**

@@ -27,7 +27,7 @@ final class OpenapiController
      * Swagger UI 页面展示
      * @throws Throwable
      */
-    public function swaggerUI(string $docRoute, ConfigSwaggerUiDTO|array $config = [])
+    public function swaggerUI(string $docRoute, ConfigSwaggerUiDTO|array $config = []): mixed
     {
         $config = ConfigSwaggerUiDTO::fromConfig($config);
 
@@ -43,7 +43,7 @@ final class OpenapiController
      * Openapi 文档
      * @throws Throwable
      */
-    public function openapiDoc(ConfigOpenapiDocDTO|array $config = [])
+    public function openapiDoc(ConfigOpenapiDocDTO|array $config = []): mixed
     {
         $config = ConfigOpenapiDocDTO::fromConfig($config);
 

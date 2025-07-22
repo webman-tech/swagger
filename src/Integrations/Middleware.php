@@ -28,9 +28,9 @@ class Middleware
             if ($factory instanceof \Closure) {
                 $factory = $factory();
             }
-            if ($factory instanceof ResponseInterface) {
+            if ($factory instanceof MiddlewareInterface) {
                 self::$factory = $factory;
-            } elseif (class_exists($factory)) {
+            } elseif (class_exists($factory) && is_a($factory, MiddlewareInterface::class, true)) {
                 self::$factory = new $factory();
             } else {
                 throw new InvalidArgumentException('response_middleware error');

@@ -8,14 +8,16 @@ use WebmanTech\Swagger\Helper\ConfigHelper;
 
 final class ConfigSwaggerUiDTO extends BaseConfigDTO
 {
+    public string $view_path;
+
     public function __construct(
-        public string  $view = 'swagger-ui', // 视图名称
-        public ?string $view_path = null, // 视图路径，相对 app_path() 的路径
-        public string  $assets_base_url = 'https://unpkg.com/swagger-ui-dist',
-        public array   $data = [], // 视图数据
+        public string $view = 'swagger-ui', // 视图名称
+        ?string       $view_path = null, // 视图路径，相对 app_path() 的路径
+        public string $assets_base_url = 'https://unpkg.com/swagger-ui-dist',
+        public array  $data = [], // 视图数据
     )
     {
-        $this->view_path ??= ConfigHelper::getViewPath();
+        $this->view_path = $view_path ?? ConfigHelper::getViewPath();
         $appName = (string)config('app.name', 'swagger');
         $this->assets_base_url = rtrim($this->assets_base_url, '/');
         $this->data = ArrayHelper::merge(

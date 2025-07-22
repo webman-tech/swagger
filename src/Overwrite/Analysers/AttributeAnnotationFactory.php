@@ -63,8 +63,9 @@ class AttributeAnnotationFactory extends \OpenApi\Analysers\AttributeAnnotationF
         // 枚举特殊处理
         if ($reflector->isEnum()) {
             // 设置枚举的类型，否则默认会取 枚举 的键名
+            /** @phpstan-ignore-next-line */
             $reflectorEnum = new ReflectionEnum($reflector->getName());
-            $this->mapNativeType($schema, $reflectorEnum->getBackingType()?->getName());
+            $this->mapNativeType($schema, $reflectorEnum->getBackingType()?->getName() ?? 'string');
         }
 
         return $schema;

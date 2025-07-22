@@ -22,6 +22,7 @@ composer require webman-tech/swagger
 - 支持丰富的配置（host 访问限制 / swagger-ui 配置 / openapi 配置）
 - 性能优先（服务启动后缓存，开发环境支持自动更新）
 - 支持自动注册 webman 路由（已经写了 openapi 文档，再写一遍 webman Route 是不是多此一举？）
+- 不仅仅支持 webman 环境（非一键启动，需要调整配置）
 
 ## 使用
 
@@ -129,11 +130,11 @@ Route::group('/api2', function () {
 
 ## webman 路由自动注册
 
-在 config 的 `app.php` 中修改 `register_webman_route` 为 true 即可自动注册 webman 路由
+在 config 的 `app.php` 中修改 `register_route` 为 true 即可自动注册 webman 路由
 
 ## 路由传参与 swagger 文档绑定，并且支持自动校验（仅支持 php>=8.1）
 
-建立一个 Form（可同时用于 POST 和 GET）
+建立一个 Form（可同时用于 POST 和 GET，可以无需任何的 Swagger 注解，也能用）
 
 ```php
 <?php
@@ -143,16 +144,22 @@ namespace app\form;
 use WebmanTech\DTO\Attributes\ValidationRules;
 use WebmanTech\DTO\BaseRequestDTO;
 use WebmanTech\DTO\BaseResponseDTO;
-use OpenApi\Attributes as OA;
 
-#[OA\Schema(required: ['name', 'age'])]
 class TestForm extends BaseRequestDTO {
-    #[OA\Property(description: '名称', example: 'webman')]
+    /**
+     * 名称
+     * @example webman
+     */
     public string $name = '';
-    #[OA\Property(description: '年龄', example: 5)]
+    /**
+     * 年龄
+     * @example 5 
+     */
     #[ValidationRules(max: 100)]
     public int $age = 0;
-    #[OA\Property(description: '备注', example: 'xxx')]
+    /**
+     * 备注
+     */
     public string $remark = '';
     
     public function doSomething(): TestFormResult {
@@ -162,10 +169,11 @@ class TestForm extends BaseRequestDTO {
     }
 }
 
-#[OA\Schema]
 class TestFormResult extends BaseResponseDTO {
     public function __construct(
-        #[OA\Property(description: '名称')]
+        /**
+         * 名称
+         */
         public string $name,
     ) {
     }
@@ -193,11 +201,27 @@ class IndexController {
             ->doSomething()
             ->toResponse();
     }
+    
+    #[OA\Get(
+        path: '/xxx',
+        summary: '接口说明',
+        x: [
+            SchemaConstants::X_SCHEMA_REQUEST => TestForm::class . '@doSomething'
+        ],
+    )]
+    public function md(Request $request) {
+        return TestForm::fromRequest($request)
+            ->doSomething()
+            ->toResponse();
+    }
 }
 ```
 
 ## 参考
 
+[webman 使用最佳实践](https://github.com/krissss/webman-basic/tree/master/app/api)
+
 [webman 使用 swagger 示例：注解模式的 crud](https://github.com/webman-tech/webman-samples/tree/swagger-attributions)
 
 [webman 使用 swagger 示例：多 swagger 文档](https://github.com/webman-tech/webman-samples/tree/swagger-multi)
+

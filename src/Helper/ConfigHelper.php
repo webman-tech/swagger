@@ -11,11 +11,7 @@ final class ConfigHelper
 
     public static function get(string $key, mixed $default = null): mixed
     {
-        if (isset(self::$testKV[$key])) {
-            return self::$testKV[$key];
-        }
-
-        return config("plugin.webman-tech.swagger.{$key}", $default);
+        return self::$testKV[$key] ?? config("plugin.webman-tech.swagger.{$key}", $default);
     }
 
     private static ?string $viewPath = null;

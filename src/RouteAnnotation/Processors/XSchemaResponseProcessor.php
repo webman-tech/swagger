@@ -93,28 +93,26 @@ final class XSchemaResponseProcessor
             return $item;
         }, $schemaList);
         // 将所有的子项 string 转为 Schema
-        return array_map(function ($schemaList) use ($operation): array {
-            return array_map(function ($schema) use ($operation): AnSchema {
-                if (is_string($schema)) {
-                    // 字符串的形式
-                    if (class_exists($schema) || trait_exists($schema) || interface_exists($schema)) {
-                        $class = $schema;
-                        $schema = $this->analysis->getSchemaForSource($class);
-                        if (!$schema instanceof AnSchema) {
-                            throw new \InvalidArgumentException(sprintf('Class `%s` not exists, in %s', $class, $operation->_context));
-                        }
-                    } else {
-                        $schema = new Schema(
-                            description: $schema,
-                        );
+        return array_map(fn($schemaList): array => array_map(function ($schema) use ($operation): AnSchema {
+            if (is_string($schema)) {
+                // 字符串的形式
+                if (class_exists($schema) || trait_exists($schema) || interface_exists($schema)) {
+                    $class = $schema;
+                    $schema = $this->analysis->getSchemaForSource($class);
+                    if (!$schema instanceof AnSchema) {
+                        throw new \InvalidArgumentException(sprintf('Class `%s` not exists, in %s', $class, $operation->_context));
                     }
+                } else {
+                    $schema = new Schema(
+                        description: $schema,
+                    );
                 }
-                if (!$schema instanceof AnSchema) {
-                    throw new \InvalidArgumentException(sprintf('operation path %s, value of `x.%s` type error', $operation->path, self::X_SCHEMA));
-                }
-                return $schema;
-            }, $schemaList);
-        }, $schemaList);
+            }
+            if (!$schema instanceof AnSchema) {
+                throw new \InvalidArgumentException(sprintf('operation path %s, value of `x.%s` type error', $operation->path, self::X_SCHEMA));
+            }
+            return $schema;
+        }, $schemaList), $schemaList);
     }
 
     private function getResponse(AnOperation $operation, int $statusCode): AnResponse

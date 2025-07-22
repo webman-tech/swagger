@@ -19,7 +19,7 @@ use WebmanTech\Swagger\Helper\SwaggerHelper;
 final class ResponseLayoutProcessor
 {
     public function __construct(
-        private ?string $layoutClass = null,
+        private readonly ?string $layoutClass = null,
         private ?string $layoutDataCode = null,
     )
     {

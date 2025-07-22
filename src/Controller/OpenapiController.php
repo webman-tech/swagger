@@ -87,9 +87,7 @@ final class OpenapiController
         }
         if (count($openapi->paths) > 1) {
             // 表示已经有接口了，移除掉默认的必须路径
-            $openapi->paths = array_filter($openapi->paths, function (OA\PathItem $pathItem) {
-                return $pathItem->path !== OpenapiSpec::EXAMPLE_PATH;
-            });
+            $openapi->paths = array_filter($openapi->paths, fn(OA\PathItem $pathItem) => $pathItem->path !== OpenapiSpec::EXAMPLE_PATH);
         }
 
         if ($validate) {

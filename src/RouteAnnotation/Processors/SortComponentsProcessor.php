@@ -20,15 +20,11 @@ final class SortComponentsProcessor
 
         /** @phpstan-ignore-next-line */
         if (is_object($analysis->openapi->components) && is_iterable($analysis->openapi->components->schemas)) {
-            usort($analysis->openapi->components->schemas, function (Schema $a, Schema $b) {
-                return strcmp($a->schema, $b->schema);
-            });
+            usort($analysis->openapi->components->schemas, fn(Schema $a, Schema $b) => strcmp($a->schema, $b->schema));
         }
         /** @phpstan-ignore-next-line */
         if (is_iterable($analysis->openapi->paths)) {
-            usort($analysis->openapi->paths, function (PathItem $a, PathItem $b) {
-                return strcmp($a->path, $b->path);
-            });
+            usort($analysis->openapi->paths, fn(PathItem $a, PathItem $b) => strcmp($a->path, $b->path));
         }
     }
 }

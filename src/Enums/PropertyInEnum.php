@@ -16,7 +16,7 @@ enum PropertyInEnum: string
     case Header = 'header';
     case Cookie = 'cookie';
     case Body = 'body';
-    case Form = 'form'; // TODO 暂未实现相关功能，后续可以参考 json 去实现
+    case Form = 'form';
     case Json = 'json';
     case Post = 'post'; // alias json
     case Get = 'get'; // alias query
@@ -60,6 +60,7 @@ enum PropertyInEnum: string
     {
         return self::tryFromAnnotationX($schema, $default, [
             self::Json,
+            self::Form,
             ...self::REQUEST_PARAMETERS,
         ]);
     }
@@ -68,6 +69,7 @@ enum PropertyInEnum: string
     {
         return self::tryFromAnnotationX($property, $default, [
             self::Json,
+            self::Form,
             self::Body,
             ...self::REQUEST_PARAMETERS,
         ]);

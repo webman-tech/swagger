@@ -18,7 +18,6 @@ use WebmanTech\Swagger\RouteAnnotation\DTO\XInPropertyDTO;
  */
 final class XSchemaRequestProcessor
 {
-    private const X_SCHEMA = SchemaConstants::X_SCHEMA_REQUEST;
     private const X_SCHEMA_CLASS_METHOD = '_temp-class-method';
 
     private Analysis $analysis;
@@ -43,7 +42,7 @@ final class XSchemaRequestProcessor
                 $propertyIn = PropertyInEnum::tryFromSchemaX($schema, $defaultPropertyIn);
                 // 将 schema 上的 x-in-property 放到对应位置
                 $this->addXInProperties($operation, $schema);
-                if ($propertyIn === PropertyInEnum::Json) {
+                if (in_array($propertyIn, [PropertyInEnum::Json, PropertyInEnum::Form])) {
                     // 添加到 requestBody 上
                     $this->add2requestBodyJsonUseRef($operation, $schema);
                 } elseif (in_array($propertyIn, PropertyInEnum::REQUEST_PARAMETERS, true)) {
@@ -52,14 +51,10 @@ final class XSchemaRequestProcessor
                 }
 
                 // 从 classMethod 上提取出 response 类型
-                if ($classMethod = SwaggerHelper::getAnnotationXValue($schema, self::X_SCHEMA_CLASS_METHOD)) {
-                    SwaggerHelper::removeAnnotationXValue($schema, self::X_SCHEMA_CLASS_METHOD);
+                if ($classMethod = SwaggerHelper::getAnnotationXValue($schema, self::X_SCHEMA_CLASS_METHOD, remove: true)) {
                     $this->add2responseXSchemaResponse($operation, $classMethod);
                 }
             }
-
-            // 清理
-            SwaggerHelper::removeAnnotationXValue($operation, self::X_SCHEMA);
         }
     }
 
@@ -68,7 +63,7 @@ final class XSchemaRequestProcessor
      */
     private function getNormalizedSchemaValues(AnOperation $operation): ?array
     {
-        $schemaList = SwaggerHelper::getAnnotationXValue($operation, self::X_SCHEMA);
+        $schemaList = SwaggerHelper::getAnnotationXValue($operation, SchemaConstants::X_SCHEMA_REQUEST, remove: true);
         if ($schemaList === null) {
             return null;
         }
@@ -76,7 +71,7 @@ final class XSchemaRequestProcessor
             $schemaList = [$schemaList];
         }
         if (!is_array($schemaList)) {
-            throw new \InvalidArgumentException(sprintf('operation path %s, value of `x.%s` type error', $operation->path, self::X_SCHEMA));
+            throw new \InvalidArgumentException(sprintf('operation path %s, value of `x.%s` type error', $operation->path, SchemaConstants::X_SCHEMA_REQUEST));
         }
         return array_map(function ($schema) use ($operation): AnSchema {
             if (is_string($schema)) {
@@ -96,7 +91,7 @@ final class XSchemaRequestProcessor
                 }
             }
             if (!$schema instanceof AnSchema) {
-                throw new \InvalidArgumentException(sprintf('operation path %s, value of `x.%s` type error', $operation->path, self::X_SCHEMA));
+                throw new \InvalidArgumentException(sprintf('operation path %s, value of `x.%s` type error', $operation->path, SchemaConstants::X_SCHEMA_REQUEST));
             }
             return $schema;
         }, $schemaList);
@@ -126,8 +121,68 @@ final class XSchemaRequestProcessor
 
     private function add2requestBodyJsonUseRef(AnOperation $operation, AnSchema $schema): void
     {
-        $mediaType = SwaggerHelper::getOperationRequestBodyMediaType($operation, 'application/json');
-        SwaggerHelper::appendSchema2mediaType($mediaType, $schema, $this->analysis);
+        $contentTypes = match ($this->isContentTypeHasForm($schema)) {
+            1 => ['multipart/form-data'],
+            2 => ['application/json', 'multipart/form-data'],
+            default => ['application/json']
+        };
+        foreach ($contentTypes as $contentType) {
+            $mediaType = SwaggerHelper::getOperationRequestBodyMediaType($operation, $contentType);
+            SwaggerHelper::appendSchema2mediaType($mediaType, $schema, $this->analysis);
+        }
+    }
+
+    /**
+     * schema 中是否有 form 类型
+     * @return int 0 表示没有，1表示全部，2表示部分
+     */
+    private function isContentTypeHasForm(AnSchema $schema): int
+    {
+        $propertyIn = SwaggerHelper::getAnnotationXValue($schema, SchemaConstants::X_PROPERTY_IN);
+        if ($propertyIn === PropertyInEnum::Form) {
+            // 设定为 in form 的情况
+            return 1;
+        }
+        if (!Generator::isDefault($schema->ref)) {
+            // 使用 ref 的情况，取真实 schema
+            $schema = $this->analysis->getSchemaForSource(SwaggerHelper::getAnnotationClassName($schema));
+            if (!$schema) {
+                return 0;
+            }
+            return $this->isContentTypeHasForm($schema);
+        }
+        $allOf = SwaggerHelper::getValue($schema->allOf, []);
+        if ($allOf) {
+            $result = 0;
+            foreach ($allOf as $item) {
+                $value = $this->isContentTypeHasForm($item);
+                if ($value > $result) {
+                    $result = $value;
+                }
+            }
+            return $result;
+        }
+
+        foreach (SwaggerHelper::getValue($schema->properties, []) as $property) {
+            /** @var array $types */
+            $types = SwaggerHelper::getAnnotationXValue($property, SchemaConstants::X_PROPERTY_TYPES, array_filter([
+                $property->_context->type,
+            ]));
+            if (!$types) {
+                continue;
+            }
+            // 有其中一个属性是
+            $isCount = 0;
+            foreach ($types as $type) {
+                if (SwaggerHelper::isTypeUploadedFile($type)) {
+                    $isCount++;
+                }
+            }
+            if ($isCount > 0) {
+                return $isCount < count($types) ? 2 : 1;
+            }
+        }
+        return 0;
     }
 
     private function add2parametersUseSchema(AnOperation $operation, AnSchema $schema, PropertyInEnum $propertyIn): void

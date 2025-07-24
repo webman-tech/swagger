@@ -42,4 +42,9 @@ final class SchemaConstants
      * @see RequestPropertyInEnum
      */
     public const X_PROPERTY_IN = 'in';
+    /**
+     * OA\Property 的 x 中使用的 types 参数名
+     * 用于定义特定的类型
+     */
+    public const X_PROPERTY_TYPES = 'types';
 }

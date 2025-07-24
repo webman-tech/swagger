@@ -3,7 +3,10 @@
 namespace WebmanTech\Swagger\RouteAnnotation\Processors;
 
 use OpenApi\Analysis;
+use OpenApi\Annotations\Property as AnProperty;
 use OpenApi\Annotations\Schema as AnSchema;
+use WebmanTech\Swagger\DTO\SchemaConstants;
+use WebmanTech\Swagger\Helper\SwaggerHelper;
 use WebmanTech\Swagger\RouteAnnotation\DTO\XInPropertyDTO;
 
 /**
@@ -15,9 +18,13 @@ class XSchemaCleanProcessor
     {
         /** @var AnSchema[] $schemas */
         $schemas = $analysis->getAnnotationsOfType(AnSchema::class);
-
         foreach ($schemas as $schema) {
             XInPropertyDTO::removeFromSchema($schema);
+        }
+
+        $properties = $analysis->getAnnotationsOfType(AnProperty::class);
+        foreach ($properties as $property) {
+            SwaggerHelper::removeAnnotationXValue($property, SchemaConstants::X_PROPERTY_TYPES);
         }
     }
 }

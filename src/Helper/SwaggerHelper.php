@@ -16,6 +16,8 @@ use OpenApi\Attributes\MediaType;
 use OpenApi\Attributes\RequestBody;
 use OpenApi\Attributes\Schema;
 use OpenApi\Generator;
+use Symfony\Component\HttpFoundation\File\UploadedFile as SymfonyUploadedFile;
+use Webman\Http\UploadFile as WebmanUploadedFile;
 
 /**
  * @internal
@@ -259,5 +261,22 @@ final class SwaggerHelper
         $mediaType->schema->properties = Generator::UNDEFINED;
         /** @phpstan-ignore-next-line */
         $mediaType->schema->ref = Generator::UNDEFINED;
+    }
+
+    /**
+     * $type 是否是上传文件的类型
+     */
+    public static function isTypeUploadedFile(mixed $type): bool
+    {
+        if (!is_string($type) || !str_contains($type, '\\')) {
+            return false;
+        }
+        if (
+            is_a($type, WebmanUploadedFile::class, true)
+            || is_a($type, SymfonyUploadedFile::class, true)
+        ) {
+            return true;
+        }
+        return false;
     }
 }

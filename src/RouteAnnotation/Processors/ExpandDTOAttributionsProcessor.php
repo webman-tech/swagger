@@ -6,6 +6,7 @@ use OpenApi\Analysis;
 use OpenApi\Annotations\Items as AnItems;
 use OpenApi\Annotations\Property as AnProperty;
 use OpenApi\Annotations\Schema as AnSchema;
+use OpenApi\Attributes\AdditionalProperties;
 use OpenApi\Attributes\Components;
 use OpenApi\Attributes\Items;
 use OpenApi\Attributes\Property;
@@ -52,6 +53,8 @@ final class ExpandDTOAttributionsProcessor
                     if (!$propertyName) {
                         continue;
                     }
+                    // 修复类型
+                    $this->fixType($property);
                     // 使用 ValidationRules 补充
                     if ($attribution = $factory->getAttributionValidationRules($propertyName)) {
                         $this->fillPropertyByValidationRules($property, $attribution, $schemaRequired);
@@ -62,6 +65,55 @@ final class ExpandDTOAttributionsProcessor
                     }
                 }
                 SwaggerHelper::setValue($schema->required, $schemaRequired);
+            }
+        }
+    }
+
+    private function fixType(AnProperty $property): void
+    {
+        if (!Generator::isDefault($property->type)) {
+            return;
+        }
+        // 自定义类型
+        $types = SwaggerHelper::getAnnotationXValue($property, SchemaConstants::X_PROPERTY_TYPES, array_filter([
+            // 默认先取 swagger-php 已经取到的类型
+            $property->_context->type,
+        ]));
+        if ($types) {
+            $this->fixUploadedFileType($property, $types);
+            return;
+        }
+        // 没有类型定义的情况
+        // 1. 本身代码就没定义类型
+        // 2. swagger-php 不能解析联合类型（此处做支持）
+        $types = [];
+        if (!$property->_context->type && $property->_context->property) {
+            $reflectPropertyType = (new \ReflectionProperty(SwaggerHelper::getAnnotationClassName($property), $property->_context->property))
+                ->getType();
+            if ($reflectPropertyType instanceof \ReflectionUnionType) {
+                foreach ($reflectPropertyType->getTypes() as $itemType) {
+                    if ($itemType instanceof \ReflectionNamedType) {
+                        $types[] = $itemType->getName();
+                    }
+                }
+            }
+        }
+        if (!$types) {
+            return;
+        }
+        // 将联合类型的信息填充到 x-types 上
+        $this->fixUploadedFileType($property, $types);
+        SwaggerHelper::setAnnotationXValue($property, SchemaConstants::X_PROPERTY_TYPES, $types);
+    }
+
+    private function fixUploadedFileType(AnProperty $property, array $types): void
+    {
+        foreach ($types as $type) {
+            if (SwaggerHelper::isTypeUploadedFile($type)) {
+                // 有上传类型的情况，将类型改为 binary
+                $property->type = 'string';
+                $property->format = 'binary';
+                return;
             }
         }
     }
@@ -78,6 +130,10 @@ final class ExpandDTOAttributionsProcessor
                 $validationRules->array => 'array',
                 default => Generator::UNDEFINED,
             };
+        }
+        if ($property->type === 'array' && $validationRules->object !== null) {
+            // php 定义是数组，但是实际可能是 object 的情况
+            $property->type = 'object';
         }
         if (Generator::isDefault($property->minimum) && $validationRules->min) {
             $property->minimum = $validationRules->min;
@@ -113,6 +169,21 @@ final class ExpandDTOAttributionsProcessor
                     }
                 }
                 $property->items = $schemaItems ?? new Items();
+            }
+        }
+        if ($property->type === 'object' && $validationRules->arrayItem instanceof ValidationRules && Generator::isDefault($property->additionalProperties)) {
+            // 定义为对象，arrayItem 定义为简单的 ValidationRules 的情况
+            $type = match (true) {
+                $validationRules->arrayItem->integer => 'integer',
+                $validationRules->arrayItem->numeric => 'number',
+                $validationRules->arrayItem->boolean => 'boolean',
+                $validationRules->arrayItem->string => 'string',
+                default => null, // 其他类型的不在此处处理，建议使用标准的类的形式定义
+            };
+            if ($type) {
+                $property->additionalProperties = new AdditionalProperties(
+                    type: $type,
+                );
             }
         }
         // enum 和 object，Swagger 会自行处理

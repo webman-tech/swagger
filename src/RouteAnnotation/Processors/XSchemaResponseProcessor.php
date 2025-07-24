@@ -22,8 +22,6 @@ use WebmanTech\Swagger\RouteAnnotation\DTO\XInPropertyDTO;
  */
 final class XSchemaResponseProcessor
 {
-    private const X_SCHEMA = SchemaConstants::X_SCHEMA_RESPONSE;
-
     private Analysis $analysis;
 
     public function __invoke(Analysis $analysis): void
@@ -57,8 +55,6 @@ final class XSchemaResponseProcessor
                     }
                 }
             }
-
-            SwaggerHelper::removeAnnotationXValue($operation, self::X_SCHEMA);
         }
     }
 
@@ -67,7 +63,7 @@ final class XSchemaResponseProcessor
      */
     private function getNormalizedSchemaValues(AnOperation $operation): ?array
     {
-        $schemaList = SwaggerHelper::getAnnotationXValue($operation, self::X_SCHEMA);
+        $schemaList = SwaggerHelper::getAnnotationXValue($operation, SchemaConstants::X_SCHEMA_RESPONSE, remove: true);
         if ($schemaList === null) {
             return null;
         }
@@ -76,7 +72,7 @@ final class XSchemaResponseProcessor
             $schemaList = [$schemaList];
         }
         if (!is_array($schemaList)) {
-            throw new \InvalidArgumentException(sprintf('operation path %s, value of `x.%s` type error', $operation->path, self::X_SCHEMA));
+            throw new \InvalidArgumentException(sprintf('operation path %s, value of `x.%s` type error', $operation->path, SchemaConstants::X_SCHEMA_RESPONSE));
         }
         if (isset($schemaList[0])) {
             // index 数组
@@ -88,7 +84,7 @@ final class XSchemaResponseProcessor
                 $item = [$item];
             }
             if (!is_array($item)) {
-                throw new \InvalidArgumentException(sprintf('operation path %s, value of `x.%s` type error', $operation->path, self::X_SCHEMA));
+                throw new \InvalidArgumentException(sprintf('operation path %s, value of `x.%s` type error', $operation->path, SchemaConstants::X_SCHEMA_RESPONSE));
             }
             return $item;
         }, $schemaList);
@@ -109,7 +105,7 @@ final class XSchemaResponseProcessor
                 }
             }
             if (!$schema instanceof AnSchema) {
-                throw new \InvalidArgumentException(sprintf('operation path %s, value of `x.%s` type error', $operation->path, self::X_SCHEMA));
+                throw new \InvalidArgumentException(sprintf('operation path %s, value of `x.%s` type error', $operation->path, SchemaConstants::X_SCHEMA_RESPONSE));
             }
             return $schema;
         }, $schemaList), $schemaList);

@@ -12,7 +12,7 @@ use WebmanTech\Swagger\RouteAnnotation\DTO\XInPropertyDTO;
 /**
  * 清理 schema 上的特殊使用的 x 参数
  */
-class XSchemaCleanProcessor
+final class XSchemaCleanProcessor
 {
     public function __invoke(Analysis $analysis): void
     {

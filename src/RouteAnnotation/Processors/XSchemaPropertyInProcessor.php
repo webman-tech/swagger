@@ -14,7 +14,7 @@ use WebmanTech\Swagger\RouteAnnotation\DTO\XInPropertyDTO;
 /**
  * 处理 property 上的 x-in 参数
  */
-class XSchemaPropertyInProcessor
+final class XSchemaPropertyInProcessor
 {
     public function __invoke(Analysis $analysis): void
     {

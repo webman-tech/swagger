@@ -12,6 +12,7 @@ use OpenApi\Attributes\Items;
 use OpenApi\Attributes\Property;
 use OpenApi\Attributes\Schema;
 use OpenApi\Generator;
+use ReflectionProperty;
 use WebmanTech\DTO\Attributes\RequestPropertyIn;
 use WebmanTech\DTO\Attributes\ValidationRules;
 use WebmanTech\DTO\BaseDTO;
@@ -38,9 +39,24 @@ final class ExpandDTOAttributionsProcessor
 
         foreach ($schemas as $schema) {
             $className = SwaggerHelper::getAnnotationClassName($schema);
-            // 仅处理 BaseDTO 的
-            if (!$className || !is_a($className, BaseDTO::class, true)) {
+            if (!$className) {
                 continue;
+            }
+            // 检查是否需要支持
+            if ($schema->_context->is('trait') && $schema->_context->filename) {
+                // trait 通过内容来鉴别
+                $content = file_get_contents($schema->_context->filename) ?: '';
+                if (
+                    !str_contains($content, ValidationRules::class)
+                    && !str_contains($content, RequestPropertyIn::class)
+                ) {
+                    continue;
+                }
+            } else {
+                // 仅处理 BaseDTO 的
+                if (!is_a($className, BaseDTO::class, true)) {
+                    continue;
+                }
             }
             if (!Generator::isDefault($schema->properties)) {
                 $factory = ReflectionReaderFactory::fromClass($className);
@@ -62,6 +78,10 @@ final class ExpandDTOAttributionsProcessor
                     // 使用 RequestPropertyIn 补充
                     if ($attribution = $factory->getAttributionRequestPropertyIn($propertyName)) {
                         $this->fillPropertyByRequestPropertyIn($property, $attribution);
+                    }
+                    // 填充默认值
+                    if ($reflection = $factory->getPropertyReflection($propertyName)) {
+                        $this->fillDefault($property, $reflection);
                     }
                 }
                 SwaggerHelper::setValue($schema->required, $schemaRequired);
@@ -88,7 +108,7 @@ final class ExpandDTOAttributionsProcessor
         // 2. swagger-php 不能解析联合类型（此处做支持）
         $types = [];
         if (!$property->_context->type && $property->_context->property) {
-            $reflectPropertyType = (new \ReflectionProperty(SwaggerHelper::getAnnotationClassName($property), $property->_context->property))
+            $reflectPropertyType = (new ReflectionProperty(SwaggerHelper::getAnnotationClassName($property), $property->_context->property))
                 ->getType();
             if ($reflectPropertyType instanceof \ReflectionUnionType) {
                 foreach ($reflectPropertyType->getTypes() as $itemType) {
@@ -196,5 +216,13 @@ final class ExpandDTOAttributionsProcessor
         }
         $xPropertyInValue = PropertyInEnum::tryFromDTORequestPropertyIn($requestPropertyIn->getInEnum())->value;
         SwaggerHelper::setAnnotationXValue($property, SchemaConstants::X_PROPERTY_IN, $xPropertyInValue);
+    }
+
+    private function fillDefault(AnProperty $property, ReflectionProperty $reflection): void
+    {
+        if (!Generator::isDefault($property->default)) {
+            return;
+        }
+        SwaggerHelper::setValue($property->default, $reflection->getDefaultValue());
     }
 }

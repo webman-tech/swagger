@@ -102,14 +102,20 @@ final class SwaggerHelper
     /**
      * 移除 annotation 上的 x 的某个属性
      */
-    public static function removeAnnotationXValue(AbstractAnnotation $annotation, string $key): void
+    public static function removeAnnotationXValue(AbstractAnnotation $annotation, string|array $keys): void
     {
-        if (!Generator::isDefault($annotation->x) && array_key_exists($key, $annotation->x)) {
-            unset($annotation->x[$key]);
-            if (!$annotation->x) {
-                /** @phpstan-ignore-next-line */
-                $annotation->x = Generator::UNDEFINED;
+        if (Generator::isDefault($annotation->x)) {
+            return;
+        }
+        $keys = is_array($keys) ? $keys : [$keys];
+        foreach ($keys as $key) {
+            if (array_key_exists($key, $annotation->x)) {
+                unset($annotation->x[$key]);
             }
+        }
+        if (!$annotation->x) {
+            /** @phpstan-ignore-next-line */
+            $annotation->x = Generator::UNDEFINED;
         }
     }
 

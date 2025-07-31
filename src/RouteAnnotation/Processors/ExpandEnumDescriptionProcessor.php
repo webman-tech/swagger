@@ -75,6 +75,6 @@ final readonly class ExpandEnumDescriptionProcessor
     private function isValueEqDescription(string $value, string $description): bool
     {
         return $value === $description
-            || Str::of($value)->replace(['_', '-'], '')->lower()->toString() === Str::of($description)->replace(['_', '-'], '')->lower()->toString();
+            || Str::of($value)->replace(['_', '-'], '')->lower()->__toString() === Str::of($description)->replace(['_', '-'], '')->lower()->__toString();
     }
 }

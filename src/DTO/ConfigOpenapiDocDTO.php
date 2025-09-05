@@ -3,6 +3,7 @@
 namespace WebmanTech\Swagger\DTO;
 
 use Closure;
+use Illuminate\Database\Eloquent\Model;
 use OpenApi\Annotations\OpenApi;
 use OpenApi\Generator;
 use Symfony\Component\Finder\Finder;
@@ -34,7 +35,10 @@ final class ConfigOpenapiDocDTO extends BaseConfigDTO
         public null|string         $response_layout_data_code = null, // response 的结构 class 中的 data 字段
     )
     {
-        $this->auto_load_schema_classes = $auto_load_schema_classes ?? [BaseDTO::class];
+        $this->auto_load_schema_classes = $auto_load_schema_classes ?? array_filter([
+            BaseDTO::class,
+            $this->expand_eloquent_model_enable ? Model::class : null,
+        ]);
 
         // 暂时默认不开启校验，由于以下 issue 问题
         // https://github.com/zircote/swagger-php/pull/1776

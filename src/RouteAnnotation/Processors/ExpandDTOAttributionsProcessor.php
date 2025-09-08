@@ -191,20 +191,32 @@ final class ExpandDTOAttributionsProcessor
                 $property->items = $schemaItems ?? new Items();
             }
         }
-        if ($property->type === 'object' && $validationRules->arrayItem instanceof ValidationRules && Generator::isDefault($property->additionalProperties)) {
-            // 定义为对象，arrayItem 定义为简单的 ValidationRules 的情况
-            $type = match (true) {
-                $validationRules->arrayItem->integer => 'integer',
-                $validationRules->arrayItem->numeric => 'number',
-                $validationRules->arrayItem->boolean => 'boolean',
-                $validationRules->arrayItem->string => 'string',
-                default => null, // 其他类型的不在此处处理，建议使用标准的类的形式定义
-            };
-            if ($type) {
-                $property->additionalProperties = new AdditionalProperties(
-                    type: $type,
-                );
+        if ($property->type === 'object' && $validationRules->arrayItem && Generator::isDefault($property->additionalProperties)) {
+            // 定义为对象
+            if ($validationRules->arrayItem instanceof ValidationRules) {
+                // arrayItem 定义为简单的 ValidationRules 的情况
+                $type = match (true) {
+                    $validationRules->arrayItem->integer => 'integer',
+                    $validationRules->arrayItem->numeric => 'number',
+                    $validationRules->arrayItem->boolean => 'boolean',
+                    $validationRules->arrayItem->string => 'string',
+                    default => null, // 其他类型的不在此处处理，建议使用标准的类的形式定义
+                };
+                if ($type) {
+                    $property->additionalProperties = new AdditionalProperties(
+                        type: $type,
+                        nullable: $validationRules->nullable,
+                    );
+                }
+            } elseif (is_string($validationRules->arrayItem) && class_exists($validationRules->arrayItem)) {
+                if ($schemaNew = $this->analysis->getSchemaForSource($validationRules->arrayItem)) {
+                    $property->additionalProperties = new AdditionalProperties(
+                        ref: Components::ref($schemaNew),
+                        nullable: $validationRules->nullable,
+                    );
+                }
             }
+
         }
         // enum 和 object，Swagger 会自行处理
     }

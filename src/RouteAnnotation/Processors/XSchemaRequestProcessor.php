@@ -219,11 +219,20 @@ final class XSchemaRequestProcessor
         $schemaRequired = SwaggerHelper::getValue($schema->required, []);
         foreach (SwaggerHelper::getValue($schema->properties, []) as $property) {
             /** @var AnProperty $property */
-            $parameters[] = SwaggerHelper::renewParameterWithProperty(
+            $parameter = SwaggerHelper::renewParameterWithProperty(
                 property: $property,
                 in: $propertyIn->toParameterIn(),
                 required: in_array($property->property, $schemaRequired, true),
             );
+            if ($parameter->schema->type === 'boolean') {
+                // 在 get 请求参数中，boolean 在 swagger-ui 下会展示为 true/false 的选择
+                // 但 laravel/validation 中，bool 的验证，不支持字符串形式的 true/false
+                // 所以此处 修改为 integer 类型，并设置枚举值
+                $parameter->schema->type = 'integer';
+                $parameter->schema->enum = [0, 1];
+            }
+
+            $parameters[] = $parameter;
         }
 
         return $parameters;

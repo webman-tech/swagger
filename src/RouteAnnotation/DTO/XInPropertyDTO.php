@@ -87,7 +87,7 @@ final class XInPropertyDTO
             );
             $operation->parameters = $parameters;
         } elseif ($this->in === PropertyInEnum::Body) {
-            $mediaType = SwaggerHelper::getOperationRequestBodyMediaType($operation, 'application/octect-stream');
+            $mediaType = SwaggerHelper::getOperationRequestBodyMediaType($operation, 'application/octet-stream');
             if (!Generator::isDefault($mediaType->schema)) {
                 // body 参数仅能设置一次
                 return;
@@ -128,7 +128,7 @@ final class XInPropertyDTO
             );
             $response->headers = $headers;
         } elseif ($this->in === PropertyInEnum::Body) {
-            $mediaType = SwaggerHelper::getResponseMediaType($response, 'application/octect-stream');
+            $mediaType = SwaggerHelper::getResponseMediaType($response, 'application/octet-stream');
             if (!Generator::isDefault($mediaType->schema)) {
                 // body 参数仅能设置一次
                 return;

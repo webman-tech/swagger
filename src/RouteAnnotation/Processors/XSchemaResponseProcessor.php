@@ -202,7 +202,7 @@ final class XSchemaResponseProcessor
             nullable: SwaggerHelper::getValue($schema->nullable),
         );
 
-        $mediaType = SwaggerHelper::getResponseMediaType($response, 'application/octect-stream');
+        $mediaType = SwaggerHelper::getResponseMediaType($response, 'application/octet-stream');
         $mediaType->schema = $mediaSchema;
     }
 }

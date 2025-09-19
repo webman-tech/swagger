@@ -178,23 +178,17 @@ final class ExpandDTOAttributionsProcessor
             if (Generator::isDefault($property->items) || Generator::isDefault($property->items->type)) {
                 $schemaItems = null;
                 if ($validationRules->arrayItem instanceof ValidationRules) {
-                    if ($validationRules->arrayItem->object !== null) {
-                        $property->type = 'object';
-                    } else {
-                        $newProperty = new Property();
-                        $newRequired = [];
-                        $this->fillPropertyByValidationRules($newProperty, $validationRules->arrayItem, $newRequired);
-                        $schemaItems = SwaggerHelper::renewSchemaWithProperty($newProperty, AnItems::class);
-                        SwaggerHelper::setValue($schemaItems->required, $newRequired);
-                    }
+                    $newProperty = new Property();
+                    $newRequired = [];
+                    $this->fillPropertyByValidationRules($newProperty, $validationRules->arrayItem, $newRequired);
+                    $schemaItems = SwaggerHelper::renewSchemaWithProperty($newProperty, AnItems::class);
+                    SwaggerHelper::setValue($schemaItems->required, $newRequired);
                 } elseif (is_string($validationRules->arrayItem) && class_exists($validationRules->arrayItem)) {
                     if ($schemaNew = $this->analysis->getSchemaForSource($validationRules->arrayItem)) {
                         $schemaItems = new Items(ref: Components::ref($schemaNew));
                     }
                 }
-                if ($property->type === 'array') {
-                    $property->items = $schemaItems ?? new Items();
-                }
+                $property->items = $schemaItems ?? new Items();
             }
         }
         if ($property->type === 'object' && $validationRules->arrayItem && Generator::isDefault($property->additionalProperties)) {

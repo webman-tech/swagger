@@ -175,20 +175,26 @@ final class ExpandDTOAttributionsProcessor
         }
         if ($property->type === 'array') {
             // array 类型时，必须 Items
-            if (Generator::isDefault($property->items)) {
+            if (Generator::isDefault($property->items) || Generator::isDefault($property->items->type)) {
                 $schemaItems = null;
                 if ($validationRules->arrayItem instanceof ValidationRules) {
-                    $newProperty = new Property();
-                    $newRequired = [];
-                    $this->fillPropertyByValidationRules($newProperty, $validationRules->arrayItem, $newRequired);
-                    $schemaItems = SwaggerHelper::renewSchemaWithProperty($newProperty, AnItems::class);
-                    SwaggerHelper::setValue($schemaItems->required, $newRequired);
+                    if ($validationRules->arrayItem->object !== null) {
+                        $property->type = 'object';
+                    } else {
+                        $newProperty = new Property();
+                        $newRequired = [];
+                        $this->fillPropertyByValidationRules($newProperty, $validationRules->arrayItem, $newRequired);
+                        $schemaItems = SwaggerHelper::renewSchemaWithProperty($newProperty, AnItems::class);
+                        SwaggerHelper::setValue($schemaItems->required, $newRequired);
+                    }
                 } elseif (is_string($validationRules->arrayItem) && class_exists($validationRules->arrayItem)) {
                     if ($schemaNew = $this->analysis->getSchemaForSource($validationRules->arrayItem)) {
                         $schemaItems = new Items(ref: Components::ref($schemaNew));
                     }
                 }
-                $property->items = $schemaItems ?? new Items();
+                if ($property->type === 'array') {
+                    $property->items = $schemaItems ?? new Items();
+                }
             }
         }
         if ($property->type === 'object' && $validationRules->arrayItem && Generator::isDefault($property->additionalProperties)) {

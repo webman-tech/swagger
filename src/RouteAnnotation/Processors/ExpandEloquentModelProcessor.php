@@ -58,9 +58,9 @@ final class ExpandEloquentModelProcessor
         $reflectionClass = new \ReflectionClass($className);
         $docComment = $reflectionClass->getDocComment();
 
-        $model = new $className;
-        $visibleAttributes = $model->getVisible();
-        $hiddenAttributes = $model->getHidden();
+        $model = $reflectionClass->isAbstract() ? null : new $className;
+        $visibleAttributes = $model?->getVisible() ?? [];
+        $hiddenAttributes = $model?->getHidden() ?? [];
 
         if ($docComment) {
             $matches = [];

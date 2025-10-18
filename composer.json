@@ -14,6 +14,6 @@
   "require": {
     "php": "^8.2",
     "webman-tech/dto": ">=1.0 || dev-main",
-    "zircote/swagger-php": "^5.2"
+    "zircote/swagger-php": ">=5.2 <5.5"
   }
 }

@@ -28,6 +28,12 @@ final class ExpandDTOAttributionsProcessor
 {
     private Analysis $analysis;
 
+    public function __construct(
+        private readonly bool $appendValidationRulesInDescription = true,
+    )
+    {
+    }
+
     public function __invoke(Analysis $analysis): void
     {
         $this->analysis = $analysis;
@@ -85,6 +91,10 @@ final class ExpandDTOAttributionsProcessor
                     }
                 }
                 SwaggerHelper::setValue($schema->required, $schemaRequired);
+            }
+
+            if ($this->appendValidationRulesInDescription) {
+                $this->appendValidationRulesInDescription($schema, $className::getValidationRules());
             }
         }
     }
@@ -236,5 +246,30 @@ final class ExpandDTOAttributionsProcessor
             return;
         }
         SwaggerHelper::setValue($property->default, $reflection->getDefaultValue());
+    }
+
+    private function appendValidationRulesInDescription(AnSchema $schema, array $validationRules): void
+    {
+        if (!$validationRules) {
+            return;
+        }
+
+        if (Generator::isDefault($schema->description)) {
+            $schema->description = '';
+        } else {
+            $schema->description .= "\n";
+        }
+        $content = [
+            '```php',
+            '// Validation Rules',
+            '['
+        ];
+        foreach ($validationRules as $key => $rules) {
+            $ruleStr = implode(', ', array_map(fn($rule) => is_string($rule) ? "'{$rule}'" : ('__' . gettype($rule)), $rules));
+            $content[] = "    '{$key}' => [{$ruleStr}],";
+        }
+        $content[] = ']';
+        $content[] = '```';
+        $schema->description .= implode("\n", $content);
     }
 }

@@ -31,6 +31,9 @@ final class ConfigOpenapiDocDTO extends BaseConfigDTO
         public bool                $expand_eloquent_model_enable = true, // 是否自动扫描 Eloquent Model 的属性，并生成对应的 schema
         public bool                $append_dto_validation_rules_in_description = true, // 是否将 DTO 的验证规则写入到 Schema 的 description 中
         public bool                $clean_unused_components_enable = false, // 是否清理未使用的 components
+        public bool                $sort_components_enable = true, // 是否对 components 进行排序
+        public bool                $sort_components_sort_schemas = true, // 是否对 components.schemas 进行排序
+        public bool                $sort_components_sort_paths = false, // 是否对 components.paths 进行排序
         null|array                 $auto_load_schema_classes = null, // 自动加载 schema 类型的 class 名集合，可以在不需要写 Schema 注解的情况下也能当 Schema 用
         public null|string         $response_layout_class = null, // response 的结构 class
         public null|string         $response_layout_data_code = null, // response 的结构 class 中的 data 字段

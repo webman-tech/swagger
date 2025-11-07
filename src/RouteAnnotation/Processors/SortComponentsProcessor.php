@@ -12,19 +12,31 @@ use OpenApi\Annotations\Schema;
  */
 final class SortComponentsProcessor
 {
+    public function __construct(
+        private readonly bool $enabled = true,
+        private readonly bool $sortSchemas = true, // components 排序方便查找
+        private readonly bool $sortPaths = false, // paths 默认不排序，与代码编写顺序一致
+    )
+    {
+    }
+
     public function __invoke(Analysis $analysis): void
     {
-        if (!$analysis->openapi) {
+        if (!$this->enabled || !$analysis->openapi) {
             return;
         }
 
-        /** @phpstan-ignore-next-line */
-        if (is_object($analysis->openapi->components) && is_iterable($analysis->openapi->components->schemas)) {
-            usort($analysis->openapi->components->schemas, fn(Schema $a, Schema $b) => strcmp($a->schema, $b->schema));
+        if ($this->sortSchemas) {
+            /** @phpstan-ignore-next-line */
+            if (is_object($analysis->openapi->components) && is_iterable($analysis->openapi->components->schemas)) {
+                usort($analysis->openapi->components->schemas, fn(Schema $a, Schema $b) => strcmp($a->schema, $b->schema));
+            }
         }
-        /** @phpstan-ignore-next-line */
-        if (is_iterable($analysis->openapi->paths)) {
-            usort($analysis->openapi->paths, fn(PathItem $a, PathItem $b) => strcmp($a->path, $b->path));
+        if ($this->sortPaths) {
+            /** @phpstan-ignore-next-line */
+            if (is_iterable($analysis->openapi->paths)) {
+                usort($analysis->openapi->paths, fn(PathItem $a, PathItem $b) => strcmp($a->path, $b->path));
+            }
         }
     }
 }

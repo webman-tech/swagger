@@ -106,7 +106,11 @@ final class Generator extends \OpenApi\Generator
                     ->add(new OAProcessors\CleanUnusedComponents(
                         enabled: $this->openapiDocConfig->clean_unused_components_enable,
                     ))
-                    ->add(new RouteAnnotation\Processors\SortComponentsProcessor())
+                    ->add(new RouteAnnotation\Processors\SortComponentsProcessor(
+                        enabled: $this->openapiDocConfig->sort_components_enable,
+                        sortSchemas: $this->openapiDocConfig->sort_components_sort_schemas,
+                        sortPaths: $this->openapiDocConfig->sort_components_sort_paths,
+                    ))
                     ->add(new RouteAnnotation\Processors\XCleanProcessor());
             });
     }

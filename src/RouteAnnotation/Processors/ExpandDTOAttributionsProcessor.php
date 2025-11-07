@@ -16,6 +16,7 @@ use ReflectionProperty;
 use WebmanTech\DTO\Attributes\RequestPropertyIn;
 use WebmanTech\DTO\Attributes\ValidationRules;
 use WebmanTech\DTO\BaseDTO;
+use WebmanTech\DTO\BaseRequestDTO;
 use WebmanTech\DTO\Reflection\ReflectionReaderFactory;
 use WebmanTech\Swagger\DTO\SchemaConstants;
 use WebmanTech\Swagger\Enums\PropertyInEnum;
@@ -93,7 +94,7 @@ final class ExpandDTOAttributionsProcessor
                 SwaggerHelper::setValue($schema->required, $schemaRequired);
             }
 
-            if ($this->appendValidationRulesInDescription) {
+            if ($this->appendValidationRulesInDescription && is_a($className, BaseRequestDTO::class, true)) {
                 $this->appendValidationRulesInDescription($schema, $className::getValidationRules());
             }
         }

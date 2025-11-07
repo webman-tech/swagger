@@ -26,19 +26,19 @@ final class MergeClassInfoProcessor
         $operations = $analysis->getAnnotationsOfType(AnOperation::class);
 
         foreach ($operations as $operation) {
-            $parentClass = SwaggerHelper::getAnnotationClassName($operation);
-            if (!$parentClass) {
+            $operationClass = SwaggerHelper::getAnnotationClassName($operation);
+            if (!$operationClass) {
                 continue;
             }
-            // tag
-            $tag = $analysis->getAnnotationForSource($parentClass, AnTag::class);
+            // 目前 analysis 只提供了取单个 tag 的功能（不支持 class 上定义多 tag），暂时够用
+            $tag = $analysis->getAnnotationForSource($operationClass, AnTag::class);
             if ($tag) {
                 $this->appendTagToOperation($operation, $tag);
             }
         }
     }
 
-    private function appendTagToOperation(AnOperation $operation, AnTag $tagParent): void
+    private function appendTagToOperation(AnOperation $operation, AnTag $classTag): void
     {
         if (Generator::isDefault($operation->tags)) {
             $operation->tags = [];
@@ -50,12 +50,12 @@ final class MergeClassInfoProcessor
             }));
             return;
         }
-        if (!in_array($tagParent->name, $operation->tags, true)) {
+        if (!in_array($classTag->name, $operation->tags, true)) {
             // 将 class 上的 tag 添加到 operation
             if ($this->classTagFirst) {
-                array_unshift($operation->tags, $tagParent->name);
+                array_unshift($operation->tags, $classTag->name);
             } else {
-                $operation->tags[] = $tagParent->name;
+                $operation->tags[] = $classTag->name;
             }
         }
     }

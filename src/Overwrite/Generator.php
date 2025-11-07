@@ -82,6 +82,7 @@ final class Generator extends \OpenApi\Generator
 
                 $pipeline
                     ->remove(OAProcessors\CleanUnusedComponents::class)
+                    ->remove(OAProcessors\AugmentTags::class) // 该 processor 会清理未使用的 tag，需要在 MergeClassInfoProcessor 之后执行
                     ->add(new RouteAnnotation\Processors\ExpandEloquentModelProcessor(
                         enabled: $this->openapiDocConfig->expand_eloquent_model_enable,
                     ))
@@ -89,6 +90,7 @@ final class Generator extends \OpenApi\Generator
                         appendValidationRulesInDescription: $this->openapiDocConfig->append_dto_validation_rules_in_description,
                     ))
                     ->add(new RouteAnnotation\Processors\MergeClassInfoProcessor())
+                    ->add(new OAProcessors\AugmentTags()) // 在 MergeClassInfoProcessor 之后执行
                     ->add(new RouteAnnotation\Processors\ExpandEnumDescriptionProcessor(
                             enabled: $this->openapiDocConfig->schema_enum_description_enable,
                             descriptionMethod: $this->openapiDocConfig->schema_enum_description_method)

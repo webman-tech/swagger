@@ -15,5 +15,10 @@ interface RouteRegisterInterface
     /**
      * 注册一个路由
      */
-    public function addRoute(string $method, string $path, \Closure $callback, mixed $middlewares = null): void;
+    public function addRoute(string $method, string $path, \Closure $callback, mixed $middlewares = null, ?string $name = null): void;
+
+    /**
+     * 根据 name 获取 url
+     */
+    public function getUrlByName(string $name): ?string;
 }

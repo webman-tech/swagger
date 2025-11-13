@@ -48,13 +48,25 @@ final class Swagger
         $swaggerRoute = $config->route_prefix;
         $docUrl = 'doc';
         $docRoute = rtrim($swaggerRoute, '/') . '/' . $docUrl;
+        $dtoGeneratorRoute = rtrim($swaggerRoute, '/') . '/dto-generator';
 
         $routerRegister = RouteRegister::create();
+
+        if ($config->openapi_doc->enable_dto_generator && ConfigHelper::getDtoGeneratorPath() !== null) {
+            $routeName = 'swagger.dto_generator';
+            $dtoGeneratorConfig = $config->openapi_doc->dto_generator_config ?? [
+                'defaultGenerationType' => 'form',
+                'defaultNamespace' => 'app\\api\\controller\\form',
+            ];
+            $routerRegister->addRoute('GET', $dtoGeneratorRoute, fn() => $controller->dtoGenerator($dtoGeneratorConfig), $hostForbiddenMiddleware, name: $routeName);
+            $config->swagger_ui->data['dto_generator_url'] = $routerRegister->getUrlByName($routeName);
+        }
 
         // 注册 swagger 访问的路由
         $routerRegister->addRoute('GET', $swaggerRoute, fn() => $controller->swaggerUI($docUrl, $config->swagger_ui), $hostForbiddenMiddleware);
         // 注册 openapi doc 的路由
         $routerRegister->addRoute('GET', $docRoute, fn() => $controller->openapiDoc($config->openapi_doc), $hostForbiddenMiddleware);
+
 
         // 注册 api 接口路由
         if ($config->register_route) {

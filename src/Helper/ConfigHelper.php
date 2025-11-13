@@ -15,6 +15,7 @@ final class ConfigHelper
     }
 
     private static ?string $viewPath = null;
+    private static ?string $dtoGeneratorPath = null;
 
     public static function getViewPath(): string
     {
@@ -35,6 +36,27 @@ final class ConfigHelper
         }
 
         throw new \RuntimeException('找不到 swagger 模板路径');
+    }
+
+    public static function getDtoGeneratorPath(): ?string
+    {
+        if (self::$dtoGeneratorPath !== null) {
+            return self::$dtoGeneratorPath;
+        }
+
+        $guessPaths = [
+            '../vendor/webman-tech/dto/web', // 单独安装 webman-tech/dto 时
+            '../vendor/webman-tech/components-monorepo/packages/dto/web', // 安装 webman-tech/components-monorepo 时
+            '../packages/dto/web', // 测试时使用
+        ];
+        foreach ($guessPaths as $guessPath) {
+            $absolute = app_path() . '/' . trim($guessPath, '/');
+            if (is_dir($absolute)) {
+                return self::$dtoGeneratorPath = $absolute;
+            }
+        }
+
+        return null;
     }
 
     /**

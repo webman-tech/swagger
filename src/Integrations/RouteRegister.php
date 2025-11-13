@@ -53,8 +53,16 @@ final class WebmanRouteFactory implements RouteRegisterInterface
         }
     }
 
-    public function addRoute(string $method, string $path, \Closure $callback, mixed $middlewares = null): void
+    public function addRoute(string $method, string $path, \Closure $callback, mixed $middlewares = null, ?string $name = null): void
     {
-        WebmanRoute::add(strtoupper($method), $path, $callback)->middleware($middlewares);
+        $route = WebmanRoute::add(strtoupper($method), $path, $callback)->middleware($middlewares);
+        if ($name) {
+            $route->name($name);
+        }
+    }
+
+    public function getUrlByName(string $name): ?string
+    {
+        return WebmanRoute::getByName($name)?->url();
     }
 }

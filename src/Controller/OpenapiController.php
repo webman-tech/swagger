@@ -7,6 +7,7 @@ use Throwable;
 use WebmanTech\Swagger\Controller\RequiredElementsAttributes\PathItem\OpenapiSpec;
 use WebmanTech\Swagger\DTO\ConfigOpenapiDocDTO;
 use WebmanTech\Swagger\DTO\ConfigSwaggerUiDTO;
+use WebmanTech\Swagger\Helper\ConfigHelper;
 use WebmanTech\Swagger\Helper\JsExpression;
 use WebmanTech\Swagger\Integrations\Response;
 use WebmanTech\Swagger\Overwrite\Generator;
@@ -33,6 +34,11 @@ final class OpenapiController
 
         $data = $config->data;
         $data['ui_config']['url'] = new JsExpression("window.location.pathname.replace(/\/+$/, '') + '/{$docRoute}'");
+        $data['dto_generator_url'] ??= null;
+        $data['dto_generator_config'] ??= [
+            'defaultGenerationType' => 'form',
+            'defaultNamespace' => 'app\\controller\\api\\form',
+        ];
 
         return Response::create()->renderView($config->view, $data, $config->view_path);
     }
@@ -63,6 +69,36 @@ final class OpenapiController
         [$content, $contentType] = self::$docCache[$cacheKey];
 
         return Response::create()->body($content, ['Content-Type' => $contentType]);
+    }
+
+    /**
+     * DTO 生成器页面
+     */
+    public function dtoGenerator(array|null $dtoGeneratorConfig = null): mixed
+    {
+        $basePath = ConfigHelper::getDtoGeneratorPath();
+        if ($basePath === null) {
+            throw new \RuntimeException('DTO generator assets not found. Please install webman-tech/dto.');
+        }
+        $indexPath = rtrim($basePath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'index.html';
+        if (!is_file($indexPath)) {
+            throw new \RuntimeException('DTO generator index.html not found.');
+        }
+        $content = file_get_contents($indexPath);
+        if ($content === false) {
+            throw new \RuntimeException('Failed to read DTO generator index.html');
+        }
+
+        if ($dtoGeneratorConfig) {
+            $dtoGeneratorConfig = json_encode($dtoGeneratorConfig);
+            $prefix = <<<JS
+<script>
+window.__DTO_GENERATOR_CONFIG = {$dtoGeneratorConfig};
+</script>
+JS;
+            $content = str_replace('</head>', $prefix . '</head>', $content);
+        }
+        return Response::create()->body($content, ['Content-Type' => 'text/html; charset=utf-8']);
     }
 
     /**

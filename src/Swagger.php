@@ -8,6 +8,7 @@ use WebmanTech\Swagger\Helper\ConfigHelper;
 use WebmanTech\Swagger\Integrations\Middleware;
 use WebmanTech\Swagger\Integrations\RouteRegister;
 use WebmanTech\Swagger\RouteAnnotation\Reader;
+use function WebmanTech\CommonUtils\app_path;
 
 final class Swagger
 {

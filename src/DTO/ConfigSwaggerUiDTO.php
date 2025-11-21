@@ -12,14 +12,14 @@ final class ConfigSwaggerUiDTO extends BaseConfigDTO
     public string $view_path;
 
     public function __construct(
-        public string               $view = 'swagger-ui', // 视图名称
+        public string               $view = '', // 视图名称
         null|string                 $view_path = null, // 视图路径，相对 app_path() 的路径
         private string              $assets_base_url = 'https://unpkg.com/swagger-ui-dist',
         private readonly null|array $tag_sort = null, // 标签的排序
         public array                $data = [], // 视图数据
     )
     {
-        $this->view_path = $view_path ?? ConfigHelper::getViewPath();
+        $this->view_path = $view_path ?? __DIR__ . '/../view/swagger-ui.php';
         $appName = (string)config('app.name', 'swagger');
 
         $this->assets_base_url = rtrim($this->assets_base_url, '/');

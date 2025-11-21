@@ -44,11 +44,6 @@ final class Response
  */
 final class WebmanResponseFactory implements ResponseInterface
 {
-    public function renderView(string $view, array $data, string $viewPath): WebmanResponse
-    {
-        return raw_view($view, $data, $viewPath);
-    }
-
     public function body(string $content, array $header): mixed
     {
         return new WebmanResponse(

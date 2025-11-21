@@ -13,7 +13,8 @@
   },
   "require": {
     "php": "^8.2",
-    "webman-tech/dto": ">=1.0 || dev-main",
+    "webman-tech/dto": "^1.0 || dev-main",
+    "webman-tech/common-utils": "^1.0 || dev-main",
     "zircote/swagger-php": ">=5.2 <5.5"
   }
 }

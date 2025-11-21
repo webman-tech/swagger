@@ -2,6 +2,9 @@
 
 namespace WebmanTech\Swagger\Helper;
 
+use function WebmanTech\CommonUtils\app_path;
+use function WebmanTech\CommonUtils\config;
+
 /**
  * @internal
  */
@@ -27,7 +30,7 @@ final class ConfigHelper
         $guessPaths = [
             '../vendor/webman-tech/swagger/src', // 单独安装 webman-tech/swagger 时
             '../vendor/webman-tech/components-monorepo/packages/swagger/src', // 安装 webman-tech/components-monorepo 时
-            '../packages/swagger/src', // 测试时使用
+            '../../../packages/swagger/src', // 测试时使用
         ];
         foreach ($guessPaths as $guessPath) {
             if (is_dir(app_path() . '/' . $guessPath)) {
@@ -47,7 +50,7 @@ final class ConfigHelper
         $guessPaths = [
             '../vendor/webman-tech/dto/web', // 单独安装 webman-tech/dto 时
             '../vendor/webman-tech/components-monorepo/packages/dto/web', // 安装 webman-tech/components-monorepo 时
-            '../packages/dto/web', // 测试时使用
+            '../../../packages/dto/web', // 测试时使用
         ];
         foreach ($guessPaths as $guessPath) {
             $absolute = app_path() . '/' . trim($guessPath, '/');

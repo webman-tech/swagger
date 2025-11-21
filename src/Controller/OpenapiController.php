@@ -4,6 +4,8 @@ namespace WebmanTech\Swagger\Controller;
 
 use OpenApi\Annotations as OA;
 use Throwable;
+use WebmanTech\CommonUtils\Local;
+use WebmanTech\CommonUtils\View;
 use WebmanTech\Swagger\Controller\RequiredElementsAttributes\PathItem\OpenapiSpec;
 use WebmanTech\Swagger\DTO\ConfigOpenapiDocDTO;
 use WebmanTech\Swagger\DTO\ConfigSwaggerUiDTO;
@@ -40,7 +42,8 @@ final class OpenapiController
             'defaultNamespace' => 'app\\controller\\api\\form',
         ];
 
-        return Response::create()->renderView($config->view, $data, $config->view_path);
+        $content = View::renderPHP(Local::combinePath($config->view_path, $config->view), $data);
+        return Response::create()->body($content, ['Content-Type' => 'text/html; charset=utf-8']);
     }
 
     private static array $docCache = [];

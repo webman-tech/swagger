@@ -119,7 +119,9 @@ final class ExpandDTOAttributionsProcessor
         // 2. swagger-php 不能解析联合类型（此处做支持）
         $types = [];
         if (!$property->_context->type && $property->_context->property) {
-            $reflectPropertyType = (new ReflectionProperty(SwaggerHelper::getAnnotationClassName($property), $property->_context->property))
+            /** @var class-string $className */
+            $className = SwaggerHelper::getAnnotationClassName($property);
+            $reflectPropertyType = (new ReflectionProperty($className, $property->_context->property))
                 ->getType();
             if ($reflectPropertyType instanceof \ReflectionUnionType) {
                 foreach ($reflectPropertyType->getTypes() as $itemType) {

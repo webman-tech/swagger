@@ -2,7 +2,6 @@
 
 namespace WebmanTech\Swagger\Helper;
 
-use function WebmanTech\CommonUtils\app_path;
 use function WebmanTech\CommonUtils\config;
 
 /**
@@ -17,49 +16,9 @@ final class ConfigHelper
         return self::$testKV[$key] ?? config("plugin.webman-tech.swagger.{$key}", $default);
     }
 
-    private static ?string $viewPath = null;
-    private static ?string $dtoGeneratorPath = null;
-
-    public static function getViewPath(): string
-    {
-        if (self::$viewPath !== null) {
-            return self::$viewPath;
-        }
-
-        // 相对 app 目录的路径
-        $guessPaths = [
-            '../vendor/webman-tech/swagger/src', // 单独安装 webman-tech/swagger 时
-            '../vendor/webman-tech/components-monorepo/packages/swagger/src', // 安装 webman-tech/components-monorepo 时
-            '../../../packages/swagger/src', // 测试时使用
-        ];
-        foreach ($guessPaths as $guessPath) {
-            if (is_dir(app_path() . '/' . $guessPath)) {
-                return self::$viewPath = $guessPath;
-            }
-        }
-
-        throw new \RuntimeException('找不到 swagger 模板路径');
-    }
-
     public static function getDtoGeneratorPath(): ?string
     {
-        if (self::$dtoGeneratorPath !== null) {
-            return self::$dtoGeneratorPath;
-        }
-
-        $guessPaths = [
-            '../vendor/webman-tech/dto/web', // 单独安装 webman-tech/dto 时
-            '../vendor/webman-tech/components-monorepo/packages/dto/web', // 安装 webman-tech/components-monorepo 时
-            '../../../packages/dto/web', // 测试时使用
-        ];
-        foreach ($guessPaths as $guessPath) {
-            $absolute = app_path() . '/' . trim($guessPath, '/');
-            if (is_dir($absolute)) {
-                return self::$dtoGeneratorPath = $absolute;
-            }
-        }
-
-        return null;
+        return __DIR__ . '/../../../dto/web/index.html';
     }
 
     /**

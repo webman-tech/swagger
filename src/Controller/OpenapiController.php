@@ -2,16 +2,18 @@
 
 namespace WebmanTech\Swagger\Controller;
 
+use Exception;
 use OpenApi\Annotations as OA;
+use RuntimeException;
 use Throwable;
 use WebmanTech\CommonUtils\Local;
+use WebmanTech\CommonUtils\Response;
 use WebmanTech\CommonUtils\View;
 use WebmanTech\Swagger\Controller\RequiredElementsAttributes\PathItem\OpenapiSpec;
 use WebmanTech\Swagger\DTO\ConfigOpenapiDocDTO;
 use WebmanTech\Swagger\DTO\ConfigSwaggerUiDTO;
 use WebmanTech\Swagger\Helper\ConfigHelper;
 use WebmanTech\Swagger\Helper\JsExpression;
-use WebmanTech\Swagger\Integrations\Response;
 use WebmanTech\Swagger\Overwrite\Generator;
 
 final class OpenapiController
@@ -43,7 +45,7 @@ final class OpenapiController
         ];
 
         $content = View::renderPHP(Local::combinePath($config->view_path, $config->view), $data);
-        return Response::create()->body($content, ['Content-Type' => 'text/html; charset=utf-8']);
+        return Response::make()->sendBody($content, headers: ['Content-Type' => 'text/html; charset=utf-8']);
     }
 
     private static array $docCache = [];
@@ -71,7 +73,7 @@ final class OpenapiController
         }
         [$content, $contentType] = self::$docCache[$cacheKey];
 
-        return Response::create()->body($content, ['Content-Type' => $contentType]);
+        return Response::make()->sendBody($content, headers: ['Content-Type' => $contentType]);
     }
 
     /**
@@ -81,15 +83,15 @@ final class OpenapiController
     {
         $basePath = ConfigHelper::getDtoGeneratorPath();
         if ($basePath === null) {
-            throw new \RuntimeException('DTO generator assets not found. Please install webman-tech/dto.');
+            throw new RuntimeException('DTO generator assets not found. Please install webman-tech/dto.');
         }
         $indexPath = rtrim($basePath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'index.html';
         if (!is_file($indexPath)) {
-            throw new \RuntimeException('DTO generator index.html not found.');
+            throw new RuntimeException('DTO generator index.html not found.');
         }
         $content = file_get_contents($indexPath);
         if ($content === false) {
-            throw new \RuntimeException('Failed to read DTO generator index.html');
+            throw new RuntimeException('Failed to read DTO generator index.html');
         }
 
         if ($dtoGeneratorConfig) {
@@ -101,7 +103,7 @@ window.__DTO_GENERATOR_CONFIG = {$dtoGeneratorConfig};
 JS;
             $content = str_replace('</head>', $prefix . '</head>', $content);
         }
-        return Response::create()->body($content, ['Content-Type' => 'text/html; charset=utf-8']);
+        return Response::make()->sendBody($content, headers: ['Content-Type' => 'text/html; charset=utf-8']);
     }
 
     /**
@@ -122,7 +124,7 @@ JS;
             validate: false, // 固定为关闭，在后面再执行验证
         );
         if ($openapi === null) {
-            throw new \Exception('openapi generate failed');
+            throw new Exception('openapi generate failed');
         }
         if (count($openapi->paths) > 1) {
             // 表示已经有接口了，移除掉默认的必须路径

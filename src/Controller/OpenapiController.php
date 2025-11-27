@@ -45,7 +45,10 @@ final class OpenapiController
         ];
 
         $content = View::renderPHP(Local::combinePath($config->view_path, $config->view), $data);
-        return Response::make()->sendBody($content, headers: ['Content-Type' => 'text/html; charset=utf-8']);
+        return Response::make()
+            ->withHeaders(['Content-Type' => 'text/html; charset=utf-8'])
+            ->withBody($content)
+            ->toRaw();
     }
 
     private static array $docCache = [];
@@ -73,7 +76,10 @@ final class OpenapiController
         }
         [$content, $contentType] = self::$docCache[$cacheKey];
 
-        return Response::make()->sendBody($content, headers: ['Content-Type' => $contentType]);
+        return Response::make()
+            ->withHeaders(['Content-Type' => $contentType])
+            ->withBody($content)
+            ->toRaw();
     }
 
     /**
@@ -103,7 +109,10 @@ window.__DTO_GENERATOR_CONFIG = {$dtoGeneratorConfig};
 JS;
             $content = str_replace('</head>', $prefix . '</head>', $content);
         }
-        return Response::make()->sendBody($content, headers: ['Content-Type' => 'text/html; charset=utf-8']);
+        return Response::make()
+            ->withHeaders(['Content-Type' => 'text/html; charset=utf-8'])
+            ->withBody($content)
+            ->toRaw();
     }
 
     /**

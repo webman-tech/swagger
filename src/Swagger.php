@@ -2,10 +2,10 @@
 
 namespace WebmanTech\Swagger;
 
+use WebmanTech\CommonUtils\Route;
 use WebmanTech\Swagger\Controller\OpenapiController;
 use WebmanTech\Swagger\DTO\ConfigRegisterRouteDTO;
 use WebmanTech\Swagger\Helper\ConfigHelper;
-use WebmanTech\Swagger\Integrations\RouteRegister;
 use WebmanTech\Swagger\Middleware\HostForbiddenMiddleware;
 use WebmanTech\Swagger\RouteAnnotation\Reader;
 use function WebmanTech\CommonUtils\app_path;
@@ -51,7 +51,7 @@ final class Swagger
         $docRoute = rtrim($swaggerRoute, '/') . '/' . $docUrl;
         $dtoGeneratorRoute = rtrim($swaggerRoute, '/') . '/dto-generator';
 
-        $routerRegister = RouteRegister::create();
+        $routerRegister = Route::getCurrent();
 
         if ($config->openapi_doc->enable_dto_generator && ConfigHelper::getDtoGeneratorPath() !== null) {
             $routeName = 'swagger.dto_generator';
@@ -59,20 +59,45 @@ final class Swagger
                 'defaultGenerationType' => 'form',
                 'defaultNamespace' => 'app\\api\\controller\\form',
             ];
-            $routerRegister->addRoute('GET', $dtoGeneratorRoute, fn() => $controller->dtoGenerator($dtoGeneratorConfig), $hostForbiddenMiddleware, name: $routeName);
-            $config->swagger_ui->data['dto_generator_url'] = $routerRegister->getUrlByName($routeName);
+            $routerRegister->addRoute(new Route\RouteObject(
+                'GET',
+                $dtoGeneratorRoute,
+                fn() => $controller->dtoGenerator($dtoGeneratorConfig),
+                name: $routeName,
+                middlewares: $hostForbiddenMiddleware,
+            ));
+            if ($url = $routerRegister->getRouteByName($routeName)->getUrl()) {
+                $config->swagger_ui->data['dto_generator_url'] = $url;
+            }
         }
 
         // 注册 swagger 访问的路由
-        $routerRegister->addRoute('GET', $swaggerRoute, fn() => $controller->swaggerUI($docUrl, $config->swagger_ui), $hostForbiddenMiddleware);
+        $routerRegister->addRoute(new Route\RouteObject(
+            'GET',
+            $swaggerRoute,
+            fn() => $controller->swaggerUI($docUrl, $config->swagger_ui),
+            middlewares: $hostForbiddenMiddleware
+        ));
         // 注册 openapi doc 的路由
-        $routerRegister->addRoute('GET', $docRoute, fn() => $controller->openapiDoc($config->openapi_doc), $hostForbiddenMiddleware);
-
+        $routerRegister->addRoute(new Route\RouteObject(
+            'GET',
+            $docRoute,
+            fn() => $controller->openapiDoc($config->openapi_doc),
+            middlewares: $hostForbiddenMiddleware
+        ));
 
         // 注册 api 接口路由
         if ($config->register_route) {
             $reader = new Reader();
-            $routerRegister->register($reader->getData($config->openapi_doc->getScanSources()));
+            foreach ($reader->getData($config->openapi_doc->getScanSources()) as $item) {
+                $routerRegister->addRoute(new Route\RouteObject(
+                    $item->method,
+                    $item->path,
+                    [$item->controller, $item->action],
+                    name: $item->name,
+                    middlewares: $hostForbiddenMiddleware
+                ));
+            }
         }
     }
 }

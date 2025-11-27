@@ -1,13 +1,14 @@
 <?php
 
-namespace WebmanTech\Swagger\Integrations\Webman;
+namespace WebmanTech\Swagger\Middleware;
 
-use Webman\Http\Request;
-use Webman\Http\Response;
-use Webman\MiddlewareInterface;
+use Webman\Http\Request as WebmanRequest;
+use WebmanTech\CommonUtils\Middleware\BaseMiddleware;
+use WebmanTech\CommonUtils\Request;
+use WebmanTech\CommonUtils\Response;
 use WebmanTech\Swagger\DTO\ConfigHostForbiddenDTO;
 
-final class HostForbiddenMiddleware implements MiddlewareInterface
+final class HostForbiddenMiddleware extends BaseMiddleware
 {
     protected ConfigHostForbiddenDTO $config;
 
@@ -18,17 +19,16 @@ final class HostForbiddenMiddleware implements MiddlewareInterface
         $this->config = ConfigHostForbiddenDTO::fromConfig($config);
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function process(Request $request, callable $handler): Response
+    public function processRequest(Request $request, \Closure $handler): Response
     {
         if ($this->config->enable) {
             [$can, $ip] = $this->checkIp($request);
             if (!$can) {
                 [$can, $host] = $this->checkHost($request);
                 if (!$can) {
-                    return response("Forbidden for ip({$ip}) and host({$host})", 403);
+                    return Response::make()
+                        ->withStatus(403)
+                        ->withBody("Forbidden for ip({$ip}) and host({$host})");
                 }
             }
         }
@@ -41,8 +41,11 @@ final class HostForbiddenMiddleware implements MiddlewareInterface
         if ($this->config->ip_white_list === null) {
             return [true, ''];
         }
-        $ip = $request->getRealIp();
-        if ($this->config->ip_white_list_intranet === true && Request::isIntranetIp($ip)) {
+        $ip = $request->getUserIp();
+        if (!$ip) {
+            return [false, ''];
+        }
+        if ($this->config->ip_white_list_intranet === true && $this->isIntranetIp($ip)) {
             return [true, ''];
         }
         if (in_array($ip, $this->config->ip_white_list)) {
@@ -56,12 +59,21 @@ final class HostForbiddenMiddleware implements MiddlewareInterface
         if ($this->config->host_white_list === null) {
             return [true, ''];
         }
-        $host = (string)$request->host();
+        $host = $request->getHost();
         foreach ($this->config->host_white_list as $needle) {
-            if ($needle !== '' && str_contains($host, (string)$needle)) {
+            if ($needle !== '' && str_contains($host, $needle)) {
                 return [true, ''];
             }
         }
         return [false, $host];
+    }
+
+    private function isIntranetIp(string $ip): bool
+    {
+        if (class_exists(WebmanRequest::class)) {
+            return WebmanRequest::isIntranetIp($ip);
+        }
+
+        return preg_match('/^(10|172\.16|192\.168)\./', $ip) > 0;
     }
 }

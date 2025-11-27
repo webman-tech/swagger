@@ -5,8 +5,8 @@ namespace WebmanTech\Swagger;
 use WebmanTech\Swagger\Controller\OpenapiController;
 use WebmanTech\Swagger\DTO\ConfigRegisterRouteDTO;
 use WebmanTech\Swagger\Helper\ConfigHelper;
-use WebmanTech\Swagger\Integrations\Middleware;
 use WebmanTech\Swagger\Integrations\RouteRegister;
+use WebmanTech\Swagger\Middleware\HostForbiddenMiddleware;
 use WebmanTech\Swagger\RouteAnnotation\Reader;
 use function WebmanTech\CommonUtils\app_path;
 
@@ -43,7 +43,7 @@ final class Swagger
             throw new \InvalidArgumentException('openapi_doc.scan_path is required');
         }
 
-        $hostForbiddenMiddleware = Middleware::create()->makeHostForbiddenMiddleware($config->host_forbidden);
+        $hostForbiddenMiddleware = new HostForbiddenMiddleware($config->host_forbidden);
         $controller = new OpenapiController();
 
         $swaggerRoute = $config->route_prefix;

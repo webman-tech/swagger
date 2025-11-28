@@ -48,7 +48,7 @@ final class OpenapiController
         return Response::make()
             ->withHeaders(['Content-Type' => 'text/html; charset=utf-8'])
             ->withBody($content)
-            ->toRaw();
+            ->getRaw();
     }
 
     private static array $docCache = [];
@@ -79,7 +79,7 @@ final class OpenapiController
         return Response::make()
             ->withHeaders(['Content-Type' => $contentType])
             ->withBody($content)
-            ->toRaw();
+            ->getRaw();
     }
 
     /**
@@ -112,7 +112,7 @@ JS;
         return Response::make()
             ->withHeaders(['Content-Type' => 'text/html; charset=utf-8'])
             ->withBody($content)
-            ->toRaw();
+            ->getRaw();
     }
 
     /**

@@ -91,7 +91,7 @@ final class OpenapiController
         if ($path === null) {
             throw new RuntimeException('DTO generator assets not found. Please install webman-tech/dto.');
         }
-        $content = file_get_contents($path);
+        $content = file_get_contents($path) ?: '';
 
         if ($dtoGeneratorConfig) {
             $dtoGeneratorConfig = json_encode($dtoGeneratorConfig);

@@ -66,7 +66,7 @@ final class Swagger
                 name: $routeName,
                 middlewares: $hostForbiddenMiddleware,
             ));
-            if ($url = $routerRegister->getRouteByName($routeName)->getUrl()) {
+            if ($url = $routerRegister->getRouteByName($routeName)->getUrl(appendPrefix: true)) {
                 $config->swagger_ui->data['dto_generator_url'] = $url;
             }
         }

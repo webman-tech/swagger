@@ -87,18 +87,11 @@ final class OpenapiController
      */
     public function dtoGenerator(array|null $dtoGeneratorConfig = null): mixed
     {
-        $basePath = ConfigHelper::getDtoGeneratorPath();
-        if ($basePath === null) {
+        $path = ConfigHelper::getDtoGeneratorWebPath();
+        if ($path === null) {
             throw new RuntimeException('DTO generator assets not found. Please install webman-tech/dto.');
         }
-        $indexPath = rtrim($basePath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'index.html';
-        if (!is_file($indexPath)) {
-            throw new RuntimeException('DTO generator index.html not found.');
-        }
-        $content = file_get_contents($indexPath);
-        if ($content === false) {
-            throw new RuntimeException('Failed to read DTO generator index.html');
-        }
+        $content = file_get_contents($path);
 
         if ($dtoGeneratorConfig) {
             $dtoGeneratorConfig = json_encode($dtoGeneratorConfig);

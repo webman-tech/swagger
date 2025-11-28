@@ -53,7 +53,7 @@ final class Swagger
 
         $routerRegister = Route::getCurrent();
 
-        if ($config->openapi_doc->enable_dto_generator && ConfigHelper::getDtoGeneratorPath() !== null) {
+        if ($config->openapi_doc->enable_dto_generator && ConfigHelper::getDtoGeneratorWebPath() !== null) {
             $routeName = 'swagger.dto_generator';
             $dtoGeneratorConfig = $config->openapi_doc->dto_generator_config ?? [
                 'defaultGenerationType' => 'form',

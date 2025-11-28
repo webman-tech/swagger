@@ -16,9 +16,10 @@ final class ConfigHelper
         return self::$testKV[$key] ?? config("plugin.webman-tech.swagger.{$key}", $default);
     }
 
-    public static function getDtoGeneratorPath(): ?string
+    public static function getDtoGeneratorWebPath(): ?string
     {
-        return __DIR__ . '/../../../dto/web/index.html';
+        $path = __DIR__ . '/../../../dto/web/index.html';
+        return file_exists($path) ? $path : null;
     }
 
     /**

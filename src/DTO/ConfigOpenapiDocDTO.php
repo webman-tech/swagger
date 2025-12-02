@@ -6,10 +6,13 @@ use Closure;
 use Illuminate\Database\Eloquent\Model;
 use OpenApi\Annotations\OpenApi;
 use OpenApi\Generator;
+use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Finder\Finder;
 use WebmanTech\DTO\BaseConfigDTO;
 use WebmanTech\DTO\BaseDTO;
 use WebmanTech\Swagger\Helper\ConfigHelper;
+use WebmanTech\Swagger\Helper\NoneCache;
+use WebmanTech\Swagger\Helper\StaticCache;
 
 final class ConfigOpenapiDocDTO extends BaseConfigDTO
 {
@@ -23,7 +26,11 @@ final class ConfigOpenapiDocDTO extends BaseConfigDTO
         public null|Closure        $generator_modify = null, // 修改 $generator 对象
         public null|Closure        $modify = null, // 修改 $openapi 对象
         public null|string|Closure $cache_key = null, // 缓存用的 key，当注册不同实例时，需要指定不同的 key，或者做热更新用
+        public null|Closure        $cache_instance = null, // 缓存实例
+        public null|Closure        $generate_error_handler = null, // 生成失败时的处理，可以用于做通知提醒
         public string              $format = 'yaml', // yaml/json
+        public null|int            $max_execute_time = null, // 运行时间限制，单位 s
+        public null|int            $max_memory_usage = null, // 运行内存限制，单位 M
         null|bool                  $openapi_validate = null, // 是否校验产出的 openapi 文档
         public bool                $enable_dto_generator = true, // 是否显示 DTO 生成器链接
         public null|array          $dto_generator_config = null, // DTO 生成器配置
@@ -104,10 +111,28 @@ final class ConfigOpenapiDocDTO extends BaseConfigDTO
         if (is_string($this->cache_key)) {
             $cacheKey = $this->cache_key;
         } elseif ($this->cache_key instanceof Closure) {
-            $cacheKey = call_user_func($this->cache_key);
+            $cacheKey = call_user_func($this->cache_key, $this);
         }
 
-        return $cacheKey ?? md5(serialize($this->scan_path));
+        return $cacheKey ?? 'swagger:openapi_doc';
+    }
+
+    private ?CacheInterface $cache = null;
+
+    public function getCache(): CacheInterface
+    {
+        if ($this->cache === null) {
+            $cache = $this->cache_instance ?? new StaticCache();
+            if ($cache instanceof Closure) {
+                $cache = call_user_func($cache);
+            }
+            if ($cache === false) {
+                $cache = new NoneCache();
+            }
+            $this->cache = $cache;
+        }
+
+        return $this->cache;
     }
 
     public function applyGenerator(Generator $generator): void
@@ -129,11 +154,11 @@ final class ConfigOpenapiDocDTO extends BaseConfigDTO
         return match ($this->format) {
             'json' => [
                 $openApi->toJson(),
-                'application/json',
+                'application/json;charset=utf-8',
             ],
             default => [
                 $openApi->toYaml(),
-                'application/x-yaml',
+                'application/yaml;charset=utf-8',
             ],
         };
     }

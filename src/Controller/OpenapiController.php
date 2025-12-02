@@ -7,6 +7,7 @@ use OpenApi\Annotations as OA;
 use RuntimeException;
 use Throwable;
 use WebmanTech\CommonUtils\Local;
+use WebmanTech\CommonUtils\Request;
 use WebmanTech\CommonUtils\Response;
 use WebmanTech\CommonUtils\View;
 use WebmanTech\Swagger\Controller\RequiredElementsAttributes\PathItem\OpenapiSpec;
@@ -36,6 +37,14 @@ final class OpenapiController
     {
         $config = ConfigSwaggerUiDTO::fromConfig($config);
 
+        // 支持通过 request 传参来强制重新生成
+        if ($request = Request::getCurrent()) {
+            $generate = (bool)($request->get('generate') ?? false);
+            if ($generate) {
+                $docRoute .= '?generate=1';
+            }
+        }
+
         $data = $config->data;
         $data['ui_config']['url'] = new JsExpression("window.location.pathname.replace(/\/+$/, '') + '/{$docRoute}'");
         $data['dto_generator_url'] ??= null;
@@ -51,8 +60,6 @@ final class OpenapiController
             ->getRaw();
     }
 
-    private static array $docCache = [];
-
     /**
      * Openapi 文档
      * @throws Throwable
@@ -61,20 +68,41 @@ final class OpenapiController
     {
         $config = ConfigOpenapiDocDTO::fromConfig($config);
 
+        if ($config->max_execute_time) {
+            set_time_limit($config->max_execute_time);
+        }
+        if ($config->max_memory_usage) {
+            ini_set('memory_limit', $config->max_memory_usage . 'M');
+        }
+
+        $cache = $config->getCache();
         $cacheKey = $config->getCacheKey();
 
-        if (!isset(self::$docCache[$cacheKey])) {
-            $generator = (new Generator($config))->init();
-            $config->applyGenerator($generator);
-
-            $openapi = $this->scanAndGenerateOpenapi($generator, $config->getScanSources(), validate: $config->openapi_validate);
-            $config->applyModify($openapi);
-
-            $result = $config->generateWithFormat($openapi);
-
-            self::$docCache[$cacheKey] = $result;
+        $generate = false;
+        if ($request = Request::getCurrent()) {
+            $generate = (bool)($request->get('generate') ?? false);
         }
-        [$content, $contentType] = self::$docCache[$cacheKey];
+
+        [$content, $contentType, $md5] = $cache->get($cacheKey) ?? [null, null, null];
+        if ($md5 === null || $generate) {
+            $md5 = md5(serialize($config->scan_path) . $config->format);
+            try {
+                $generator = (new Generator($config))->init();
+                $config->applyGenerator($generator);
+
+                $openapi = $this->scanAndGenerateOpenapi($generator, $config->getScanSources(), validate: $config->openapi_validate);
+                $config->applyModify($openapi);
+
+                [$content, $contentType] = $config->generateWithFormat($openapi);
+            } catch (Throwable $e) {
+                if ($config->generate_error_handler) {
+                    ($config->generate_error_handler)($e);
+                }
+                throw $e;
+            }
+
+            $cache->set($cacheKey, [$content, $contentType, $md5]);
+        }
 
         return Response::make()
             ->withHeaders(['Content-Type' => $contentType])

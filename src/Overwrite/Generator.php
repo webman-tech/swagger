@@ -38,6 +38,11 @@ final class Generator extends \OpenApi\Generator
         }
     }
 
+    public function getOpenapiDocConfig(): ConfigOpenapiDocDTO
+    {
+        return $this->openapiDocConfig;
+    }
+
     public function formatSchemaName(OA\Schema $schema): void
     {
         if (!$this->schemaNameShouldFormat) {

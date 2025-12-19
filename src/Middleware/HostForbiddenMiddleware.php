@@ -26,9 +26,13 @@ class HostForbiddenMiddleware extends BaseMiddleware
             if (!$can) {
                 [$can, $host] = $this->checkHost($request);
                 if (!$can) {
+                    $content = $this->config->forbidden_show_detail;
+                    if (is_bool($content)) {
+                        $content = $content ? "Forbidden for ip({$ip}) and host({$host})" : 'Forbidden';
+                    }
                     return Response::make()
                         ->withStatus(403)
-                        ->withBody("Forbidden for ip({$ip}) and host({$host})");
+                        ->withBody($content);
                 }
             }
         }

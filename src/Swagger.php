@@ -95,7 +95,7 @@ final class Swagger
                     $item->path,
                     [$item->controller, $item->action],
                     name: $item->name,
-                    middlewares: $hostForbiddenMiddleware
+                    middlewares: $item->middlewares,
                 ));
             }
         }

@@ -207,19 +207,46 @@ final class ExpandDTOAttributionsProcessor
         if ($property->type === 'object' && $validationRules->arrayItem && Generator::isDefault($property->additionalProperties)) {
             // 定义为对象
             if ($validationRules->arrayItem instanceof ValidationRules) {
-                // arrayItem 定义为简单的 ValidationRules 的情况
-                $type = match (true) {
-                    $validationRules->arrayItem->integer => 'integer',
-                    $validationRules->arrayItem->numeric => 'number',
-                    $validationRules->arrayItem->boolean => 'boolean',
-                    $validationRules->arrayItem->string => 'string',
-                    default => null, // 其他类型的不在此处处理，建议使用标准的类的形式定义
-                };
-                if ($type) {
+                // 检查是否是嵌套数组（arrayItem 也有 arrayItem，表示 value 是数组类型）
+                if ($validationRules->arrayItem->arrayItem !== null) {
+                    // array<string, ClassName[]> 的情况，值本身是数组
+                    $newProperty = new Property();
+                    $newProperty->type = 'array';
+                    $newRequired = [];
+                    // 递归处理数组的项
+                    if ($validationRules->arrayItem->arrayItem instanceof ValidationRules) {
+                        $this->fillPropertyByValidationRules($newProperty, $validationRules->arrayItem->arrayItem, $newRequired);
+                    } elseif (is_string($validationRules->arrayItem->arrayItem) && class_exists($validationRules->arrayItem->arrayItem)) {
+                        if ($schemaNew = $this->analysis->getSchemaForSource($validationRules->arrayItem->arrayItem)) {
+                            $newProperty->items = new Items(ref: Components::ref($schemaNew));
+                        }
+                    }
+                    // 构造 AdditionalProperties，需要设置 items
+                    $schema = SwaggerHelper::renewSchemaWithProperty($newProperty);
                     $property->additionalProperties = new AdditionalProperties(
-                        type: $type,
+                        type: $schema->type,
+                        items: SwaggerHelper::getValue($schema->items),
                         nullable: $validationRules->nullable,
                     );
+                    // 清除错误的 description（swagger-php 把类型字符串当作 description 了）
+                    if (!Generator::isDefault($property->description) && str_contains($property->description, '[]>')) {
+                        $property->description = Generator::UNDEFINED;
+                    }
+                } else {
+                    // arrayItem 定义为简单的 ValidationRules 的情况
+                    $type = match (true) {
+                        $validationRules->arrayItem->integer => 'integer',
+                        $validationRules->arrayItem->numeric => 'number',
+                        $validationRules->arrayItem->boolean => 'boolean',
+                        $validationRules->arrayItem->string => 'string',
+                        default => null, // 其他类型的不在此处处理，建议使用标准的类的形式定义
+                    };
+                    if ($type) {
+                        $property->additionalProperties = new AdditionalProperties(
+                            type: $type,
+                            nullable: $validationRules->nullable,
+                        );
+                    }
                 }
             } elseif (is_string($validationRules->arrayItem) && class_exists($validationRules->arrayItem)) {
                 if ($schemaNew = $this->analysis->getSchemaForSource($validationRules->arrayItem)) {

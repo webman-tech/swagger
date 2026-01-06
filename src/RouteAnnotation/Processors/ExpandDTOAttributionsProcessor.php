@@ -153,8 +153,19 @@ final class ExpandDTOAttributionsProcessor
 
     private function fillPropertyByValidationRules(AnProperty $property, ValidationRules $validationRules, array &$schemaRequired): void
     {
+        // 检查是否是多维数组（arrayItem 也有 arrayItem）
+        $isMultiDimensionalArray = $validationRules->arrayItem instanceof ValidationRules
+            && $validationRules->arrayItem->arrayItem !== null
+            && $validationRules->object === null;
+
+        // 如果检测到多维数组，清除 swagger-php 可能设置的 ref
+        if ($isMultiDimensionalArray && !Generator::isDefault($property->ref)) {
+            $property->ref = Generator::UNDEFINED;
+        }
+
         if (Generator::isDefault($property->type)) {
             $property->type = match (true) {
+                $isMultiDimensionalArray => 'array', // 多维数组应该是 array 类型
                 $validationRules->integer => 'integer',
                 $validationRules->numeric => 'number',
                 $validationRules->boolean => 'boolean',
@@ -163,6 +174,9 @@ final class ExpandDTOAttributionsProcessor
                 $validationRules->array => 'array',
                 default => Generator::UNDEFINED,
             };
+        } elseif ($property->type === 'object' && $isMultiDimensionalArray) {
+            // swagger-php 可能已经设置了 type 为 object，修正为 array
+            $property->type = 'array';
         }
         if ($property->type === 'array' && $validationRules->object !== null) {
             // php 定义是数组，但是实际可能是 object 的情况
@@ -188,11 +202,21 @@ final class ExpandDTOAttributionsProcessor
         }
         if ($property->type === 'array') {
             // array 类型时，必须 Items
-            if (Generator::isDefault($property->items) || Generator::isDefault($property->items->type)) {
+            // 检查是否需要重新设置 items（多维数组的情况需要重新设置）
+            $needsResetItems = Generator::isDefault($property->items)
+                || Generator::isDefault($property->items->type)
+                || ($validationRules->arrayItem instanceof ValidationRules
+                    && $validationRules->arrayItem->arrayItem !== null); // 多维数组
+
+            if ($needsResetItems) {
                 $schemaItems = null;
                 if ($validationRules->arrayItem instanceof ValidationRules) {
                     $newProperty = new Property();
                     $newRequired = [];
+                    // 如果 arrayItem 本身也有 arrayItem，说明是嵌套数组
+                    if ($validationRules->arrayItem->arrayItem !== null) {
+                        $newProperty->type = 'array'; // 预设为数组类型
+                    }
                     $this->fillPropertyByValidationRules($newProperty, $validationRules->arrayItem, $newRequired);
                     $schemaItems = SwaggerHelper::renewSchemaWithProperty($newProperty, AnItems::class);
                     SwaggerHelper::setValue($schemaItems->required, $newRequired);

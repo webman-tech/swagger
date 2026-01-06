@@ -230,8 +230,9 @@ final class SwaggerHelper
 
     /**
      * 将 schema 添加到 mediaType
+     * @param string $combineType 组合类型，支持 'allOf' 或 'oneOf'
      */
-    public static function appendSchema2mediaType(AnMediaType $mediaType, AnSchema $schema, Analysis $analysis): void
+    public static function appendSchema2mediaType(AnMediaType $mediaType, AnSchema $schema, Analysis $analysis, string $combineType = 'allOf'): void
     {
         $isMediaTypeSchemaEmpty = false;
         if (Generator::isDefault($mediaType->schema)) {
@@ -253,16 +254,19 @@ final class SwaggerHelper
             $mediaType->schema = $appendSchema;
             return;
         }
-        // mediaType 的 schema 不为空，需要调整为 allOf
-        $allOf = SwaggerHelper::getValue($mediaType->schema->allOf);
-        if ($allOf === null) {
-            // 原来不是 allOf 的情况，把 mediaType 的 schema 放入 allOf 中
-            $allOf[] = clone $mediaType->schema;
+        // mediaType 的 schema 不为空，需要调整为组合类型
+        if (!in_array($combineType, ['allOf', 'oneOf'], true)) {
+            throw new \InvalidArgumentException(sprintf('combineType must be "allOf" or "oneOf", "%s" given', $combineType));
+        }
+        $combined = SwaggerHelper::getValue($mediaType->schema->{$combineType});
+        if ($combined === null) {
+            // 原来不是组合类型的情况，把 mediaType 的 schema 放入组合中
+            $combined[] = clone $mediaType->schema;
         }
         // 补上需要添加的 schema
-        $allOf[] = $appendSchema;
+        $combined[] = $appendSchema;
         // 设置到 mediaType 上
-        $mediaType->schema->allOf = $allOf;
+        $mediaType->schema->{$combineType} = $combined;
         /** @phpstan-ignore-next-line */
         $mediaType->schema->properties = Generator::UNDEFINED;
         /** @phpstan-ignore-next-line */

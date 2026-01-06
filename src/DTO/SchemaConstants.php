@@ -31,6 +31,12 @@ final class SchemaConstants
      */
     public const X_SCHEMA_RESPONSE = 'schema-response';
     /**
+     * schema 组合类型
+     * 用于指定当多个 schema 组合时使用 allOf 还是 oneOf
+     * 可选值: 'allOf', 'oneOf'
+     */
+    public const X_SCHEMA_COMBINE_TYPE = 'schema-combine-type';
+    /**
      * response layout
      */
     public const X_RESPONSE_LAYOUT = 'response-layout';

@@ -250,10 +250,23 @@ final class XSchemaRequestProcessor
         $reflectionClass = new \ReflectionClass($class);
         $reflectionMethod = $reflectionClass->getMethod($method);
         $reflectionReturnType = $reflectionMethod->getReturnType();
-        if (!$reflectionReturnType instanceof \ReflectionNamedType) {
-            throw new \InvalidArgumentException("{$class}@{$method} 必须定义返回类型，且唯一");
+
+        if (!$reflectionReturnType) {
+            throw new \InvalidArgumentException("{$class}@{$method} 必须定义返回类型");
         }
 
-        SwaggerHelper::setAnnotationXValue($operation, SchemaConstants::X_SCHEMA_RESPONSE, $reflectionReturnType->getName());
+        // 处理联合类型
+        if ($reflectionReturnType instanceof \ReflectionUnionType) {
+            $types = [];
+            foreach ($reflectionReturnType->getTypes() as $type) {
+                $types[] = $type->getName();
+            }
+            SwaggerHelper::setAnnotationXValue($operation, SchemaConstants::X_SCHEMA_RESPONSE, $types);
+            SwaggerHelper::setAnnotationXValue($operation, SchemaConstants::X_SCHEMA_COMBINE_TYPE, 'oneOf');
+        } elseif ($reflectionReturnType instanceof \ReflectionNamedType) {
+            SwaggerHelper::setAnnotationXValue($operation, SchemaConstants::X_SCHEMA_RESPONSE, $reflectionReturnType->getName());
+        } else {
+            throw new \InvalidArgumentException("{$class}@{$method} 返回类型不支持");
+        }
     }
 }

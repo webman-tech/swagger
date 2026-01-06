@@ -45,7 +45,7 @@ final class XSchemaResponseProcessor
                     $this->addXInProperties($response, $schema);
                     if ($propertyIn === PropertyInEnum::Json) {
                         // json 的添加到 requestBody 上
-                        $this->add2responseBodyJsonUseRef($response, $schema);
+                        $this->add2responseBodyJsonUseRef($response, $schema, $operation);
                     } elseif ($propertyIn === PropertyInEnum::Header) {
                         // header
                         $this->add2responseHeadersUseSchema($response, $schema);
@@ -96,7 +96,7 @@ final class XSchemaResponseProcessor
                     $class = $schema;
                     $schema = $this->analysis->getSchemaForSource($class);
                     if (!$schema instanceof AnSchema) {
-                        throw new \InvalidArgumentException(sprintf('Class `%s` not exists, in %s', $class, $operation->_context));
+                        throw new \InvalidArgumentException(sprintf('Class `%s` is not schema(not scan?), in %s', $class, $operation->_context));
                     }
                 } else {
                     $schema = new Schema(
@@ -147,10 +147,20 @@ final class XSchemaResponseProcessor
         }
     }
 
-    private function add2responseBodyJsonUseRef(AnResponse $response, AnSchema $schema): void
+    private function add2responseBodyJsonUseRef(AnResponse $response, AnSchema $schema, ?AnOperation $operation = null): void
     {
         $mediaType = SwaggerHelper::getResponseMediaType($response, 'application/json');
-        SwaggerHelper::appendSchema2mediaType($mediaType, $schema, $this->analysis);
+
+        // 从 operation 中读取组合类型配置
+        $combineType = 'allOf'; // 默认使用 allOf
+        if ($operation) {
+            $combineTypeFromX = SwaggerHelper::getAnnotationXValue($operation, SchemaConstants::X_SCHEMA_COMBINE_TYPE);
+            if (in_array($combineTypeFromX, ['allOf', 'oneOf'], true)) {
+                $combineType = $combineTypeFromX;
+            }
+        }
+
+        SwaggerHelper::appendSchema2mediaType($mediaType, $schema, $this->analysis, $combineType);
     }
 
     private function add2responseHeadersUseSchema(AnResponse $response, AnSchema $schema): void

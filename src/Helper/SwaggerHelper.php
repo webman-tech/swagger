@@ -259,7 +259,7 @@ final class SwaggerHelper
             throw new \InvalidArgumentException(sprintf('combineType must be "allOf" or "oneOf", "%s" given', $combineType));
         }
         /** @var null|array $combined */
-        $combined = SwaggerHelper::getValue($mediaType->schema, $combineType);
+        $combined = SwaggerHelper::getValue($mediaType->schema->{$combineType});
         if ($combined === null) {
             // 原来不是组合类型的情况，把 mediaType 的 schema 放入组合中
             /** @phpstan-ignore-next-line */

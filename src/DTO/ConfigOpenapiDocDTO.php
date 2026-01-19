@@ -125,6 +125,7 @@ final class ConfigOpenapiDocDTO extends BaseConfigDTO
             $cache = $this->cache_instance ?? new StaticCache();
             if ($cache instanceof Closure) {
                 $cache = call_user_func($cache);
+                /** @var CacheInterface|false $cache */
             }
             if ($cache === false) {
                 $cache = new NoneCache();

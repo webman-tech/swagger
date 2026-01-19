@@ -20,7 +20,7 @@ final class ResponseLayoutProcessor
 {
     public function __construct(
         private readonly ?string $layoutClass = null,
-        private ?string $layoutDataCode = null,
+        private ?string          $layoutDataCode = null,
     )
     {
         if ($this->layoutDataCode === null) {
@@ -62,7 +62,7 @@ final class ResponseLayoutProcessor
                 continue;
             }
             $schema = SwaggerHelper::getValue($mediaType->schema);
-            if (!$schema) {
+            if (!$schema instanceof AnSchema) {
                 continue;
             }
 

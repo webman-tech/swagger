@@ -259,7 +259,11 @@ final class XSchemaRequestProcessor
         if ($reflectionReturnType instanceof \ReflectionUnionType) {
             $types = [];
             foreach ($reflectionReturnType->getTypes() as $type) {
-                $types[] = $type->getName();
+                if ($type instanceof \ReflectionNamedType) {
+                    $types[] = $type->getName();
+                } elseif ($type instanceof \ReflectionIntersectionType) {
+                    throw new \InvalidArgumentException("{$class}@{$method} 返回类型不支持嵌套的交集类型");
+                }
             }
             SwaggerHelper::setAnnotationXValue($operation, SchemaConstants::X_SCHEMA_RESPONSE, $types);
             SwaggerHelper::setAnnotationXValue($operation, SchemaConstants::X_SCHEMA_COMBINE_TYPE, 'oneOf');

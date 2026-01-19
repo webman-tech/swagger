@@ -83,7 +83,9 @@ final class OpenapiController
             $generate = (bool)($request->get('generate') ?? false);
         }
 
-        [$content, $contentType, $md5] = $cache->get($cacheKey) ?? [null, null, null];
+        $cached = $cache->get($cacheKey) ?? [null, null, null];
+        /** @var array{0: ?string, 1: ?string, 2: ?string} $cached */
+        [$content, $contentType, $md5] = $cached;
         if ($md5 === null || $generate) {
             $md5 = md5(serialize($config->scan_path) . $config->format);
             try {

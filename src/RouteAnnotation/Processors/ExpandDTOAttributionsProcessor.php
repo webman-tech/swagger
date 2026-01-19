@@ -249,6 +249,7 @@ final class ExpandDTOAttributionsProcessor
                     $schema = SwaggerHelper::renewSchemaWithProperty($newProperty);
                     $property->additionalProperties = new AdditionalProperties(
                         type: $schema->type,
+                        /** @phpstan-ignore-next-line */
                         items: SwaggerHelper::getValue($schema->items),
                         nullable: $validationRules->nullable,
                     );

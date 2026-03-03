@@ -11,8 +11,8 @@ use Symfony\Component\Finder\Finder;
 use WebmanTech\DTO\BaseConfigDTO;
 use WebmanTech\DTO\BaseDTO;
 use WebmanTech\Swagger\Helper\ConfigHelper;
-use WebmanTech\Swagger\Helper\NoneCache;
-use WebmanTech\Swagger\Helper\StaticCache;
+use WebmanTech\CommonUtils\Cache\ArrayCache;
+use WebmanTech\CommonUtils\Cache\NullCache;
 
 final class ConfigOpenapiDocDTO extends BaseConfigDTO
 {
@@ -122,13 +122,13 @@ final class ConfigOpenapiDocDTO extends BaseConfigDTO
     public function getCache(): CacheInterface
     {
         if ($this->cache === null) {
-            $cache = $this->cache_instance ?? new StaticCache();
+            $cache = $this->cache_instance ?? new ArrayCache(defaultTtl: 3600, maxItems: 100);
             if ($cache instanceof Closure) {
                 $cache = call_user_func($cache);
                 /** @var CacheInterface|false $cache */
             }
             if ($cache === false) {
-                $cache = new NoneCache();
+                $cache = new NullCache();
             }
             $this->cache = $cache;
         }

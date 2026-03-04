@@ -60,7 +60,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `copy/`：配置文件模板
 - `src/Install.php`：Webman 安装脚本
 
-测试文件位于项目根目录的 `tests/Unit/Swagger/`。
+测试文件位于项目根目录的 `tests/Unit/Swagger/`。测试环境配置和 Helper 函数详见根目录 [CLAUDE.md](../../CLAUDE.md) 的测试相关章节。
 
 ## 代码风格
 
@@ -82,4 +82,3 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 6. **测试相关**：
    - 修改 DTO 或 Swagger 相关代码后，记得更新对应的 snapshot 文件
    - 使用 `vendor/bin/pest --update-snapshots` 更新快照
-   - 单元测试在项目根目录的 `tests/Unit/Swagger/` 下，而非包内

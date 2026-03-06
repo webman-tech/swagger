@@ -95,7 +95,9 @@ final class ExpandDTOAttributionsProcessor
             }
 
             if ($this->appendValidationRulesInDescription && is_a($className, BaseRequestDTO::class, true)) {
-                $this->appendValidationRulesInDescription($schema, $className::getValidationRules());
+                if ($validationRules = $className::getValidationRules()) {
+                    SwaggerHelper::setAnnotationXValue($schema, SchemaConstants::X_SCHEMA_VALIDATION_RULES, $validationRules);
+                }
             }
         }
     }
@@ -301,30 +303,5 @@ final class ExpandDTOAttributionsProcessor
             return;
         }
         SwaggerHelper::setValue($property->default, $reflection->getDefaultValue());
-    }
-
-    private function appendValidationRulesInDescription(AnSchema $schema, array $validationRules): void
-    {
-        if (!$validationRules) {
-            return;
-        }
-
-        if (Generator::isDefault($schema->description)) {
-            $schema->description = '';
-        } else {
-            $schema->description .= "\n";
-        }
-        $content = [
-            '```php',
-            '// Validation Rules',
-            '['
-        ];
-        foreach ($validationRules as $key => $rules) {
-            $ruleStr = implode(', ', array_map(fn($rule) => is_string($rule) ? "'{$rule}'" : ('__' . gettype($rule)), $rules));
-            $content[] = "    '{$key}' => [{$ruleStr}],";
-        }
-        $content[] = ']';
-        $content[] = '```';
-        $schema->description .= implode("\n", $content);
     }
 }

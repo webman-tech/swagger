@@ -38,7 +38,7 @@ final class ConfigOpenapiDocDTO extends BaseConfigDTO
         public bool                $schema_enum_description_enable = true, // 提取 enum 的描述信息开关
         public null|string         $schema_enum_description_method = null, // 指定提取 enum 的描述信息的方法名
         public bool                $expand_eloquent_model_enable = true, // 是否自动扫描 Eloquent Model 的属性，并生成对应的 schema
-        public bool                $append_dto_validation_rules_in_description = true, // 是否将 DTO 的验证规则写入到 Schema 的 description 中
+        public bool                $append_dto_validation_rules_in_description = true, // 是否将 DTO 的验证规则写入到 Operation 的 description 中
         public bool                $clean_unused_components_enable = false, // 是否清理未使用的 components
         public bool                $sort_components_enable = true, // 是否对 components 进行排序
         public bool                $sort_components_sort_schemas = true, // 是否对 components.schemas 进行排序

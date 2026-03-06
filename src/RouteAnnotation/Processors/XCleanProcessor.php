@@ -31,6 +31,7 @@ final class XCleanProcessor
         $schemas = $analysis->getAnnotationsOfType(AnSchema::class);
         foreach ($schemas as $schema) {
             XInPropertyDTO::removeFromSchema($schema);
+            SwaggerHelper::removeAnnotationXValue($schema, SchemaConstants::X_SCHEMA_VALIDATION_RULES);
         }
 
         /** @var AnProperty[] $properties */

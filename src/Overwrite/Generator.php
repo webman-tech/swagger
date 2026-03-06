@@ -102,6 +102,9 @@ final class Generator extends \OpenApi\Generator
                     )
                     ->add(new RouteAnnotation\Processors\XSchemaPropertyInProcessor())
                     ->add(new RouteAnnotation\Processors\XSchemaRequestProcessor())
+                    ->add(new RouteAnnotation\Processors\AppendValidationRulesToOperationDescriptionProcessor(
+                        enabled: $this->openapiDocConfig->append_dto_validation_rules_in_description,
+                    ))
                     ->add(new RouteAnnotation\Processors\XSchemaResponseProcessor())
                     ->add(new RouteAnnotation\Processors\AppendResponseProcessor())
                     ->add(new RouteAnnotation\Processors\ResponseLayoutProcessor(

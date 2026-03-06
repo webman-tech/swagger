@@ -40,6 +40,7 @@ final class AppendValidationRulesToOperationDescriptionProcessor
             return [];
         }
 
+        $mergedValidationRules = [];
         foreach ($operation->requestBody->content as $mediaType) {
             if (!$mediaType instanceof AnMediaType || Generator::isDefault($mediaType->schema)) {
                 continue;
@@ -52,12 +53,12 @@ final class AppendValidationRulesToOperationDescriptionProcessor
                 }
                 $validationRules = SwaggerHelper::getAnnotationXValue($schema, SchemaConstants::X_SCHEMA_VALIDATION_RULES);
                 if (is_array($validationRules) && $validationRules) {
-                    return $validationRules;
+                    $mergedValidationRules = array_replace($mergedValidationRules, $validationRules);
                 }
             }
         }
 
-        return [];
+        return $mergedValidationRules;
     }
 
     /**

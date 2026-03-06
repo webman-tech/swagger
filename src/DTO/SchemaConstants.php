@@ -43,7 +43,7 @@ final class SchemaConstants
     public const X_RESPONSE_LAYOUT_DATA_CODE = 'response-layout-data-code';
 
     /**
-     * OA\Property 的 x 中使用的 validation-rules 参数名
+     * OA\Schema 的内部 x 参数名
      * 暂存 schema 的验证规则，用于挂载到 Operation.description
      */
     public const X_SCHEMA_VALIDATION_RULES = 'validation-rules';

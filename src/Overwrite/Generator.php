@@ -94,6 +94,7 @@ final class Generator extends \OpenApi\Generator
                     ->add(new RouteAnnotation\Processors\ExpandDTOAttributionsProcessor(
                         appendValidationRulesInDescription: $this->openapiDocConfig->append_dto_validation_rules_in_description,
                     ))
+                    ->add(new RouteAnnotation\Processors\XDiscriminatorProcessor()) // ExpandDTOAttributionsProcessor 之后执行
                     ->add(new RouteAnnotation\Processors\MergeClassInfoProcessor())
                     ->add(new OAProcessors\AugmentTags()) // 在 MergeClassInfoProcessor 之后执行
                     ->add(new RouteAnnotation\Processors\ExpandEnumDescriptionProcessor(

@@ -58,4 +58,9 @@ final class SchemaConstants
      * 用于定义特定的类型
      */
     public const X_PROPERTY_TYPES = 'types';
+    /**
+     * OA\Property 的 x 中使用的 discriminator 参数名
+     * 用于多态定义
+     */
+    public const X_PROPERTY_DISCRIMINATOR = 'discriminator';
 }

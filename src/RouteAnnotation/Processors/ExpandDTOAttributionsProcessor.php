@@ -155,6 +155,16 @@ final class ExpandDTOAttributionsProcessor
 
     private function fillPropertyByValidationRules(AnProperty $property, ValidationRules $validationRules, array &$schemaRequired): void
     {
+        if ($validationRules->required) {
+            $schemaRequired[] = $property->property;
+        }
+
+        // discriminator 支持
+        if ($validationRules->discriminator) {
+            SwaggerHelper::setAnnotationXValue($property, SchemaConstants::X_PROPERTY_DISCRIMINATOR, $validationRules->discriminator);
+            return;
+        }
+
         // 检查是否是多维数组（arrayItem 也有 arrayItem）
         $isMultiDimensionalArray = $validationRules->arrayItem instanceof ValidationRules
             && $validationRules->arrayItem->arrayItem !== null
@@ -196,9 +206,7 @@ final class ExpandDTOAttributionsProcessor
         if (Generator::isDefault($property->maxLength) && $validationRules->maxLength) {
             $property->maxLength = $validationRules->maxLength;
         }
-        if ($validationRules->required) {
-            $schemaRequired[] = $property->property;
-        }
+
         if (Generator::isDefault($property->nullable) && $validationRules->nullable) {
             $property->nullable = true;
         }

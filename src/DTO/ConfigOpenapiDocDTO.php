@@ -8,11 +8,11 @@ use OpenApi\Annotations\OpenApi;
 use OpenApi\Generator;
 use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Finder\Finder;
+use WebmanTech\CommonUtils\Cache\ArrayCache;
+use WebmanTech\CommonUtils\Cache\NullCache;
 use WebmanTech\DTO\BaseConfigDTO;
 use WebmanTech\DTO\BaseDTO;
 use WebmanTech\Swagger\Helper\ConfigHelper;
-use WebmanTech\CommonUtils\Cache\ArrayCache;
-use WebmanTech\CommonUtils\Cache\NullCache;
 
 final class ConfigOpenapiDocDTO extends BaseConfigDTO
 {
@@ -114,7 +114,7 @@ final class ConfigOpenapiDocDTO extends BaseConfigDTO
             $cacheKey = call_user_func($this->cache_key, $this);
         }
 
-        return $cacheKey ?? 'swagger:openapi_doc';
+        return $cacheKey ?: 'swagger:openapi_doc';
     }
 
     private ?CacheInterface $cache = null;

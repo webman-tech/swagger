@@ -154,6 +154,11 @@ final class XInPropertyDTO
         }
     }
 
+    public function getIn(): PropertyInEnum
+    {
+        return $this->in;
+    }
+
     private function getRefParameter(): string
     {
         $key = self::X_KEY . '-parameter';

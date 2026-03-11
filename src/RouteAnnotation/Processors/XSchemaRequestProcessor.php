@@ -43,11 +43,10 @@ final class XSchemaRequestProcessor
                 // 将 schema 上的 x-in-property 放到对应位置
                 $this->addXInProperties($operation, $schema);
                 if (in_array($propertyIn, [PropertyInEnum::Json, PropertyInEnum::Form])) {
-                    if ($this->hasBodyProperty($schema)) {
-                        continue;
+                    if (!$this->hasBodyProperty($schema)) {
+                        // 添加到 requestBody 上
+                        $this->add2requestBodyJsonUseRef($operation, $schema);
                     }
-                    // 添加到 requestBody 上
-                    $this->add2requestBodyJsonUseRef($operation, $schema);
                 } elseif (in_array($propertyIn, PropertyInEnum::REQUEST_PARAMETERS, true)) {
                     // 添加到 parameters 上
                     $this->add2parametersUseSchema($operation, $schema, $propertyIn);

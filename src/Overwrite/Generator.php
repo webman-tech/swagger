@@ -61,6 +61,7 @@ final class Generator extends \OpenApi\Generator
     {
         /** @phpstan-ignore-next-line */
         return $this
+            ->setVersion($this->openapiDocConfig->openapi_version)
             ->setAliases(self::DEFAULT_ALIASES)
             ->setNamespaces(self::DEFAULT_NAMESPACES)
             ->setAnalyser(new ReflectionAnalyser(

@@ -46,6 +46,7 @@ final class ConfigOpenapiDocDTO extends BaseConfigDTO
         null|array                 $auto_load_schema_classes = null, // 自动加载 schema 类型的 class 名集合，可以在不需要写 Schema 注解的情况下也能当 Schema 用
         public null|string         $response_layout_class = null, // response 的结构 class
         public null|string         $response_layout_data_code = null, // response 的结构 class 中的 data 字段
+        public string              $openapi_version = '3.1.0', // OpenAPI 版本号，支持 3.0.0 / 3.1.0 等
     )
     {
         $this->auto_load_schema_classes = $auto_load_schema_classes ?? array_filter([

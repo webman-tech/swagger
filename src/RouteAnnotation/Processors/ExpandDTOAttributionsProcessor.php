@@ -257,11 +257,11 @@ final class ExpandDTOAttributionsProcessor
                     }
                     // 构造 AdditionalProperties，需要设置 items
                     $schema = SwaggerHelper::renewSchemaWithProperty($newProperty);
-                    $property->additionalProperties = new AdditionalProperties(
+                    $property->additionalProperties = $this->makeAdditionalProperties(
                         type: $schema->type,
                         /** @phpstan-ignore-next-line */
                         items: SwaggerHelper::getValue($schema->items),
-                        nullable: $validationRules->nullable,
+                        nullable: $validationRules->objectValueNullable ?? $validationRules->nullable,
                     );
                     // 清除错误的 description（swagger-php 把类型字符串当作 description 了）
                     if (!Generator::isDefault($property->description) && str_contains($property->description, '[]>')) {
@@ -277,23 +277,51 @@ final class ExpandDTOAttributionsProcessor
                         default => null, // 其他类型的不在此处处理，建议使用标准的类的形式定义
                     };
                     if ($type) {
-                        $property->additionalProperties = new AdditionalProperties(
+                        $property->additionalProperties = $this->makeAdditionalProperties(
                             type: $type,
-                            nullable: $validationRules->nullable,
+                            nullable: $validationRules->objectValueNullable ?? $validationRules->nullable,
                         );
                     }
                 }
             } elseif (is_string($validationRules->arrayItem) && class_exists($validationRules->arrayItem)) {
                 if ($schemaNew = $this->analysis->getSchemaForSource($validationRules->arrayItem)) {
-                    $property->additionalProperties = new AdditionalProperties(
+                    $property->additionalProperties = $this->makeAdditionalProperties(
                         ref: Components::ref($schemaNew),
-                        nullable: $validationRules->nullable,
+                        nullable: $validationRules->objectValueNullable ?? $validationRules->nullable,
                     );
                 }
             }
 
         }
         // enum 和 object，Swagger 会自行处理
+    }
+
+    private function makeAdditionalProperties(
+        string|array|null  $type = null,
+        ?Items             $items = null,
+        string|object|null $ref = null,
+        ?bool              $nullable = null,
+    ): AdditionalProperties
+    {
+        if ($nullable && !$this->analysis->openapi?->_context->isVersion('3.0.x')) {
+            return new AdditionalProperties(
+                oneOf: [
+                    new Schema(
+                        ref: $ref,
+                        type: $type,
+                        items: $items,
+                    ),
+                    new Schema(type: 'null'),
+                ],
+            );
+        }
+
+        return new AdditionalProperties(
+            ref: $ref,
+            type: $type,
+            items: $items,
+            nullable: $nullable,
+        );
     }
 
     private function fillPropertyByRequestPropertyIn(AnProperty $property, RequestPropertyIn $requestPropertyIn): void

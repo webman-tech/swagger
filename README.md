@@ -85,6 +85,8 @@ Swagger::create()->registerRoute([
 
 OpenAPI 文档配置：
 
+默认输出版本为 `OpenAPI 3.1.0`，可通过 `openapi_version` 配置项修改（如 `'3.0.0'`）。
+
 - `scan_path`: 扫描的目录
 - `scan_exclude`: 扫描忽略的目录
 - `format`: 文档格式（yaml/json）

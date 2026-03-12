@@ -90,6 +90,8 @@ final class ExpandDTOAttributionsProcessor
                     if ($reflection = $factory->getPropertyReflection($propertyName)) {
                         $this->fillDefault($property, $reflection);
                     }
+                    // 修正 example 类型
+                    $this->fixExample($property);
                 }
                 SwaggerHelper::setValue($schema->required, $schemaRequired);
             }
@@ -258,7 +260,7 @@ final class ExpandDTOAttributionsProcessor
                     // 构造 AdditionalProperties，需要设置 items
                     $schema = SwaggerHelper::renewSchemaWithProperty($newProperty);
                     $property->additionalProperties = $this->makeAdditionalProperties(
-                        type: $schema->type,
+                        type: is_string($schema->type) ? $schema->type : null,
                         /** @phpstan-ignore-next-line */
                         items: SwaggerHelper::getValue($schema->items),
                         nullable: $validationRules->objectValueNullable ?? $validationRules->nullable,
@@ -297,7 +299,7 @@ final class ExpandDTOAttributionsProcessor
     }
 
     private function makeAdditionalProperties(
-        string|array|null  $type = null,
+        ?string            $type = null,
         ?Items             $items = null,
         string|object|null $ref = null,
         ?bool              $nullable = null,
@@ -339,5 +341,42 @@ final class ExpandDTOAttributionsProcessor
             return;
         }
         SwaggerHelper::setValue($property->default, $reflection->getDefaultValue());
+    }
+
+    /**
+     * 修正 docblock @example 中被当作字符串的 JSON 值
+     */
+    private function fixExample(AnProperty $property): void
+    {
+        if (Generator::isDefault($property->example) || !is_string($property->example)) {
+            return;
+        }
+
+        // 标量类型：将字符串转为对应类型
+        if (in_array($property->type, ['integer', 'number'], true)) {
+            if (is_numeric($property->example)) {
+                $property->example = $property->type === 'integer'
+                    ? (int) $property->example
+                    : (float) $property->example;
+            }
+            return;
+        }
+        if ($property->type === 'boolean') {
+            if (in_array(strtolower($property->example), ['true', 'false'], true)) {
+                $property->example = strtolower($property->example) === 'true';
+            }
+            return;
+        }
+
+        // 数组/对象类型：尝试 JSON decode
+        if (in_array($property->type, ['array', 'object'], true)) {
+            $trimmed = trim($property->example);
+            if (($trimmed[0] ?? '') === '[' || ($trimmed[0] ?? '') === '{') {
+                $decoded = json_decode($trimmed);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $property->example = $decoded;
+                }
+            }
+        }
     }
 }

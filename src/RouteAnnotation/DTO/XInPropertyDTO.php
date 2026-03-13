@@ -2,18 +2,17 @@
 
 namespace WebmanTech\Swagger\RouteAnnotation\DTO;
 
+use Illuminate\Support\Str;
 use OpenApi\Analysis;
 use OpenApi\Annotations\Operation as AnOperation;
 use OpenApi\Annotations\Property as AnProperty;
 use OpenApi\Annotations\Response as AnResponse;
 use OpenApi\Annotations\Schema as AnSchema;
 use OpenApi\Attributes\Components;
-use OpenApi\Attributes\Header;
 use OpenApi\Attributes\Parameter;
 use OpenApi\Attributes\Property;
 use OpenApi\Attributes\Schema;
 use OpenApi\Generator;
-use SplObjectStorage;
 use WebmanTech\Swagger\Enums\PropertyInEnum;
 use WebmanTech\Swagger\Helper\SwaggerHelper;
 
@@ -24,8 +23,6 @@ final class XInPropertyDTO
 {
     private const X_KEY = 'in-property';
 
-    private static ?SplObjectStorage $analysisAddedRootRefs = null;
-
     public function __construct(
         private readonly PropertyInEnum $in,
         private readonly AnProperty     $property,
@@ -35,13 +32,10 @@ final class XInPropertyDTO
     )
     {
         if ($this->refFromPrefix === null) {
-            if (!$this->schema->schema) {
+            if (Generator::isDefault($this->schema->schema)) {
                 throw new \InvalidArgumentException('schema->schema is required');
             }
             $this->refFromPrefix = Components::ref($schema);
-        }
-        if (str_contains($this->refFromPrefix, 'Generator')) {
-            throw new \InvalidArgumentException('schema->schema is not valid');
         }
     }
 
@@ -83,7 +77,7 @@ final class XInPropertyDTO
     {
         if (in_array($this->in, PropertyInEnum::REQUEST_PARAMETERS, true)) {
             // 转化为 parameter
-            $ref = $this->getRefParameter($analysis, $operation->_context);
+            $ref = $this->getRefParameter($analysis);
             $parameters = SwaggerHelper::getValue($operation->parameters, []);
             $parameters[] = new Parameter(
                 ref: $ref,
@@ -108,7 +102,7 @@ final class XInPropertyDTO
                 properties: [
                     new Property(
                         property: $this->property->property,
-                        ref: $this->getRefProperty($analysis, $operation->_context),
+                        ref: $this->getRefProperty($analysis),
                     ),
                 ],
             );
@@ -123,12 +117,10 @@ final class XInPropertyDTO
     {
         if ($this->in === PropertyInEnum::Header) {
             // 转化为 header
-            $ref = $this->getRefHeader($analysis, $response->_context);
+            // 注意：不使用 $ref，直接定义完整的 header，因为 swagger-php 不支持 $ref 与 required 共存
             $headers = SwaggerHelper::getValue($response->headers, []);
-            $headers[] = new Header(
-                ref: $ref,
-                header: $this->property->property,
-            );
+            $header = SwaggerHelper::renewHeaderWithProperty($this->property, $this->required);
+            $headers[] = $header;
             $response->headers = $headers;
         } elseif ($this->in === PropertyInEnum::Body) {
             $mediaType = SwaggerHelper::getResponseMediaType($response, 'application/octet-stream');
@@ -149,7 +141,7 @@ final class XInPropertyDTO
                 properties: [
                     new Property(
                         property: $this->property->property,
-                        ref: $this->getRefProperty($analysis, $response->_context),
+                        ref: $this->getRefProperty($analysis),
                     ),
                 ],
             );
@@ -162,88 +154,62 @@ final class XInPropertyDTO
         return $this->in;
     }
 
-    private function appendRootRef(Analysis $analysis, object $context, string $ref): void
-    {
-        if (preg_match('~^(#/components/[^/]+/[^/]+)(?:/.*)+$~', $ref, $matches) !== 1) {
-            return;
-        }
-
-        $rootRef = $matches[1];
-        $storage = self::$analysisAddedRootRefs ??= new SplObjectStorage();
-        $addedRootRefs = $storage->contains($analysis) ? $storage[$analysis] : [];
-        if (isset($addedRootRefs[$rootRef])) {
-            return;
-        }
-        $addedRootRefs[$rootRef] = true;
-        $storage[$analysis] = $addedRootRefs;
-
-        // CleanUnusedComponents 只会把根级 components ref 识别为“已使用”。
-        // 这里虽然实际用到的是 `#/components/.../x-in-.../...` 这样的子路径 ref，
-        // 但只要额外补一个根级 ref 到 analysis 里，对应 schema 就不会被误清理。
-        $analysis->addAnnotation(new Schema(ref: $rootRef), $context);
-    }
-
-    private function getRefParameter(Analysis $analysis, object $context): string
+    private function getRefParameter(Analysis $analysis): string
     {
         $key = self::X_KEY . '-parameter';
         $values = SwaggerHelper::getAnnotationXValue($this->schema, $key, []);
-        $name = $this->property->property;
+        $name = $this->getSchemaBasedName($this->property->property);
         if (!isset($values[$name])) {
-            $values[$name] = SwaggerHelper::renewParameterWithProperty(
+            $parameter = SwaggerHelper::renewParameterWithProperty(
                 property: $this->property,
                 in: $this->in->toParameterIn(),
                 required: $this->required,
                 isForParameterRef: true,
             );
-            // 按需使用时将参数添加到 schema 的 x-xx 中
+            $parameter->parameter = $name; // 该参数确保了在 components 中的 name
+            $ref = SwaggerHelper::appendComponent($analysis, $parameter);
+
+            $values[$name] = $ref;
             SwaggerHelper::setAnnotationXValue($this->schema, $key, $values);
         }
-        // 返回 ref
-        $ref = "{$this->refFromPrefix}/x-{$key}/$name";
-        $this->appendRootRef($analysis, $context, $ref);
-        return $ref;
+        return $values[$name];
     }
 
-    private function getRefProperty(Analysis $analysis, object $context): string
+    private function getRefProperty(Analysis $analysis): string
     {
-        $name = $this->property->property;
         foreach (SwaggerHelper::getValue($this->schema->properties, []) as $property) {
+            $name = $this->property->property;
             /** @var AnProperty $property */
             if ($property->property === $name) {
-                // property 在原 schema 还存在的情况
+                // property 还在原 schema 中 → 原 schema 必有根级引用，子路径引用安全
                 return "{$this->refFromPrefix}/properties/$name";
             }
         }
-        // property 已经被挪走的情况
+
+        // property 已被移走 → 提升为独立 Schema
         $key = self::X_KEY . '-property';
         $values = SwaggerHelper::getAnnotationXValue($this->schema, $key, []);
+        $name = $this->getSchemaBasedName($this->property->property);
         if (!isset($values[$name])) {
-            $values[$name] = $this->property;
-            // 按需使用时将参数添加到 schema 的 x-xx 中
+            $schema = SwaggerHelper::renewSchemaWithProperty($this->property);
+            $schema->schema = $name; // 该参数确保了在 components 中的 name
+            $ref = SwaggerHelper::appendComponent($analysis, $schema);
+
+            $values[$name] = $ref . '/properties/' . $this->property->property;
             SwaggerHelper::setAnnotationXValue($this->schema, $key, $values);
         }
-        // 返回 ref
-        $ref = "{$this->refFromPrefix}/x-{$key}/$name";
-        $this->appendRootRef($analysis, $context, $ref);
-        return $ref;
+        return $values[$name];
     }
 
-    private function getRefHeader(Analysis $analysis, object $context): string
+    private function getSchemaBasedName(string $name): string
     {
-        $key = self::X_KEY . '-header';
-        $values = SwaggerHelper::getAnnotationXValue($this->schema, $key, []);
-        $name = $this->property->property;
-        if (!isset($values[$name])) {
-            $values[$name] = SwaggerHelper::renewHeaderWithProperty(
-                property: $this->property,
-                required: $this->required,
-            );
-            // 按需使用时将参数添加到 schema 的 x-xx 中
-            SwaggerHelper::setAnnotationXValue($this->schema, $key, $values);
+        $schemaName = $this->schema->schema;
+        if (Generator::isDefault($schemaName)) {
+            // 虽然 construct 中对此做了检查，但可能存在初始化后，schema 被更改的可能
+            $schemaName = Str::of(SwaggerHelper::getAnnotationClassName($this->schema))
+                ->replace('\\', '')
+                ->__toString();
         }
-        // 返回 ref
-        $ref = "{$this->refFromPrefix}/x-{$key}/$name";
-        $this->appendRootRef($analysis, $context, $ref);
-        return $ref;
+        return $schemaName . '_' . $name;
     }
 }

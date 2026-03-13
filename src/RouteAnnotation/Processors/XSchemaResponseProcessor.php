@@ -7,7 +7,6 @@ use OpenApi\Annotations\Operation as AnOperation;
 use OpenApi\Annotations\Property as AnProperty;
 use OpenApi\Annotations\Response as AnResponse;
 use OpenApi\Annotations\Schema as AnSchema;
-use OpenApi\Attributes\Header;
 use OpenApi\Attributes\Response;
 use OpenApi\Attributes\Schema;
 use OpenApi\Context;
@@ -44,8 +43,10 @@ final class XSchemaResponseProcessor
                     // 将 schema 上的 x-in-property 放到对应位置
                     $this->addXInProperties($response, $schema);
                     if ($propertyIn === PropertyInEnum::Json) {
-                        // json 的添加到 requestBody 上
-                        $this->add2responseBodyJsonUseRef($response, $schema, $operation);
+                        if (!SwaggerHelper::hasXInBodyProperty($analysis, $schema)) {
+                            // json 的添加到 requestBody 上
+                            $this->add2responseBodyJsonUseRef($response, $schema, $operation);
+                        }
                     } elseif ($propertyIn === PropertyInEnum::Header) {
                         // header
                         $this->add2responseHeadersUseSchema($response, $schema);
@@ -135,7 +136,7 @@ final class XSchemaResponseProcessor
         }
         // schema 是 ref 的情况下，取到真实的 schema
         if (!Generator::isDefault($schema->ref)) {
-            $schema = $this->analysis->getSchemaForSource($schema->_context->fullyQualifiedName($schema->_context->class));
+            $schema = $this->analysis->getSchemaForSource(SwaggerHelper::getAnnotationClassName($schema));
         }
         if (!$schema) {
             return;
@@ -149,6 +150,11 @@ final class XSchemaResponseProcessor
 
     private function add2responseBodyJsonUseRef(AnResponse $response, AnSchema $schema, ?AnOperation $operation = null): void
     {
+        // 如果 schema 为空（没有实际内容），不添加引用
+        if ($this->isEmptySchema($schema)) {
+            return;
+        }
+
         $mediaType = SwaggerHelper::getResponseMediaType($response, 'application/json');
 
         // 从 operation 中读取组合类型配置
@@ -161,6 +167,39 @@ final class XSchemaResponseProcessor
         }
 
         SwaggerHelper::appendSchema2mediaType($mediaType, $schema, $this->analysis, $combineType);
+    }
+
+    /**
+     * 检查 schema 是否为空（没有实际内容）
+     */
+    private function isEmptySchema(AnSchema $schema): bool
+    {
+        // 如果是 ref，检查真实的 schema
+        if (!Generator::isDefault($schema->ref)) {
+            $realSchema = $this->analysis->getSchemaForSource(SwaggerHelper::getAnnotationClassName($schema));
+            if ($realSchema) {
+                return $this->isEmptySchema($realSchema);
+            }
+        }
+
+        // 检查 allOf/oneOf/anyOf
+        if (SwaggerHelper::getValue($schema->allOf) || SwaggerHelper::getValue($schema->oneOf) || SwaggerHelper::getValue($schema->anyOf)) {
+            return false;
+        }
+
+        // 检查 properties
+        $properties = SwaggerHelper::getValue($schema->properties, []);
+        if (!empty($properties)) {
+            return false;
+        }
+
+        // 检查 additionalProperties
+        if (!Generator::isDefault($schema->additionalProperties)) {
+            return false;
+        }
+
+        // 只有 type: object 且没有其他内容的，认为是空 schema
+        return true;
     }
 
     private function add2responseHeadersUseSchema(AnResponse $response, AnSchema $schema): void
@@ -187,16 +226,7 @@ final class XSchemaResponseProcessor
         $schemaRequired = SwaggerHelper::getValue($schema->required, []);
         foreach (SwaggerHelper::getValue($schema->properties, []) as $property) {
             /** @var AnProperty $property */
-            $headerSchema = SwaggerHelper::renewSchemaWithProperty($property);
-            $headerSchema->_context = $context;
-
-            $header = new Header(
-                header: $property->property,
-                description: SwaggerHelper::getValue($property->description),
-                required: in_array($property->property, $schemaRequired, true),
-            );
-            $header->schema = $headerSchema;
-            $header->_context = $context;
+            $header = SwaggerHelper::renewHeaderWithProperty($property, in_array($property->property, $schemaRequired, true));
             $headers[] = $header;
         }
 

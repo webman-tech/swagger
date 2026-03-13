@@ -58,10 +58,16 @@ final class XSchemaPropertyInProcessor
             // 先移除 x-in
             SwaggerHelper::removeAnnotationXValue($property, SchemaConstants::X_PROPERTY_IN);
             // 检查必填字段，并且从 schema 的 required 中移除掉
-            $isRequired = in_array($property->property, $schemaRequired, true);
+            /**
+             * 注意：required 中存储的是原始 PHP 属性名（$property->_context->property），
+             * 而 $property->property 可能已被 ExpandDTOAttributionsProcessor 更新为其他名称
+             * @see ExpandDTOAttributionsProcessor::fillPropertyByRequestPropertyIn
+             */
+            $originalPropertyName = $property->_context->property ?? $property->property;
+            $isRequired = in_array($originalPropertyName, $schemaRequired, true);
             if ($isRequired) {
                 // 移除 required 中的参数
-                $schemaRequired = array_values(array_diff($schemaRequired, [$property->property]));
+                $schemaRequired = array_values(array_diff($schemaRequired, [$originalPropertyName]));
             }
             // 构造 DTO，设置到 schema 上
             $xPropertyIn = new XInPropertyDTO(

@@ -18,6 +18,8 @@ use OpenApi\Attributes\Schema;
 use OpenApi\Generator;
 use Symfony\Component\HttpFoundation\File\UploadedFile as SymfonyUploadedFile;
 use Webman\Http\UploadFile as WebmanUploadedFile;
+use WebmanTech\Swagger\Enums\PropertyInEnum;
+use WebmanTech\Swagger\RouteAnnotation\DTO\XInPropertyDTO;
 
 /**
  * @internal
@@ -290,6 +292,71 @@ final class SwaggerHelper
             || is_a($type, SymfonyUploadedFile::class, true)
         ) {
             return true;
+        }
+        return false;
+    }
+
+    /**
+     * 将组件添加到全局 components 中，返回 ref
+     */
+    public static function appendComponent(Analysis $analysis, AnParameter|AnHeader|AnSchema $component, bool $overwrite = false): string
+    {
+        if (!$analysis->openapi) {
+            throw new \InvalidArgumentException('analysis openapi not defined');
+        }
+
+        $name = match (true) {
+            $component instanceof AnParameter => $component->parameter,
+            $component instanceof AnHeader => $component->header,
+            $component instanceof AnSchema => $component->schema,
+        };
+
+        $type = match (true) {
+            $component instanceof AnParameter => 'parameters',
+            $component instanceof AnHeader => 'headers',
+            $component instanceof AnSchema => 'schemas',
+        };
+
+        if (Generator::isDefault($analysis->openapi->components)) {
+            $analysis->openapi->components = new Components([]);
+        }
+        $components = $analysis->openapi->components;
+        if (Generator::isDefault($components->{$type})) {
+            $components->{$type} = [];
+        }
+
+        if (isset($components->{$type}[$name]) && !$overwrite) {
+            throw new \InvalidArgumentException(sprintf('components.%s "%s" already exists', $type, $name));
+        }
+
+        // 直接存储到 components 中
+        /** @phpstan-ignore-next-line */
+        $components->{$type}[$name] = $component;
+
+        return '#/components/' . $type . '/' . $name;
+    }
+
+    /**
+     * 检查 schema 中是否存在 x-in-body 的属性字段
+     */
+    public static function hasXInBodyProperty(Analysis $analysis, AnSchema $schema): bool
+    {
+        if (!Generator::isDefault($schema->ref)) {
+            $schema = $analysis->getSchemaForSource(SwaggerHelper::getAnnotationClassName($schema));
+            if (!$schema) {
+                return false;
+            }
+            return self::hasXInBodyProperty($analysis, $schema);
+        }
+        foreach (SwaggerHelper::getValue($schema->allOf, []) as $item) {
+            if (self::hasXInBodyProperty($analysis, $item)) {
+                return true;
+            }
+        }
+        foreach (XInPropertyDTO::getListFromSchema($schema) as $xInProperty) {
+            if ($xInProperty->getIn() === PropertyInEnum::Body) {
+                return true;
+            }
         }
         return false;
     }

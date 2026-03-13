@@ -43,7 +43,7 @@ final class XSchemaRequestProcessor
                 // 将 schema 上的 x-in-property 放到对应位置
                 $this->addXInProperties($operation, $schema);
                 if (in_array($propertyIn, [PropertyInEnum::Json, PropertyInEnum::Form])) {
-                    if (!$this->hasBodyProperty($schema)) {
+                    if (!SwaggerHelper::hasXInBodyProperty($analysis, $schema)) {
                         // 添加到 requestBody 上
                         $this->add2requestBodyJsonUseRef($operation, $schema);
                     }
@@ -119,28 +119,6 @@ final class XSchemaRequestProcessor
         foreach ($xInProperties as $xInProperty) {
             $xInProperty->append2operation($operation, $this->analysis);
         }
-    }
-
-    private function hasBodyProperty(AnSchema $schema): bool
-    {
-        if (!Generator::isDefault($schema->ref)) {
-            $schema = $this->analysis->getSchemaForSource(SwaggerHelper::getAnnotationClassName($schema));
-            if (!$schema) {
-                return false;
-            }
-            return $this->hasBodyProperty($schema);
-        }
-        foreach (SwaggerHelper::getValue($schema->allOf, []) as $item) {
-            if ($this->hasBodyProperty($item)) {
-                return true;
-            }
-        }
-        foreach (XInPropertyDTO::getListFromSchema($schema) as $xInProperty) {
-            if ($xInProperty->getIn() === PropertyInEnum::Body) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private function add2requestBodyJsonUseRef(AnOperation $operation, AnSchema $schema): void

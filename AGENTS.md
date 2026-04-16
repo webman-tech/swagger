@@ -35,6 +35,28 @@
 
 测试文件位于项目根目录的 `tests/Unit/Swagger/`。测试环境配置和 Helper 函数详见根目录 [AGENTS.md](../../AGENTS.md) 的测试相关章节。
 
+## 工作流程
+
+```
+PHP 注解 / Attribute (#[OA\*] / @OA\*)
+    │
+    ▼
+Reader::scan() (扫描指定目录)
+    │
+    ▼
+Processors (依次处理，扩展/修正文档)
+    ├── ExpandDTOAttributions  ──→ 从 DTO ValidationRules 提取类型
+    ├── ExpandEnumDescription  ──→ 枚举值自动补充描述
+    ├── XSchemaRequest/Response ──→ X-Schema 简写展开
+    └── ExpandEloquentModel    ──→ Eloquent 模型字段提取
+    │
+    ▼
+OpenAPI JSON (缓存，生产环境启动时生成)
+    │
+    ├── GET /openapi      ──→ Swagger UI 页面
+    └── GET /openapi.json ──→ 原始 JSON 文档
+```
+
 ## 代码风格
 
 与根项目保持一致，详见根目录 [AGENTS.md](../../AGENTS.md)。

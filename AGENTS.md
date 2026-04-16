@@ -31,6 +31,8 @@
   - `Middleware/`：HostForbiddenMiddleware
   - `view/`：swagger-ui.php 视图模板
 - `copy/`：配置文件模板
+- `skills/`：AI 技能
+  - `webman-tech-swagger-best-practices`：swagger 使用的最佳实践
 - `src/Install.php`：Webman 安装脚本
 
 测试文件位于项目根目录的 `tests/Unit/Swagger/`。测试环境配置和 Helper 函数详见根目录 [AGENTS.md](../../AGENTS.md) 的测试相关章节。

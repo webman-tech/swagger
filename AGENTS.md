@@ -15,44 +15,21 @@
 
 测试、静态分析等通用命令与根项目一致，详见根目录 [AGENTS.md](../../AGENTS.md)。
 
-## 项目架构
-
-### 核心组件
-- **RouteAnnotation**：
-  - `Reader`：注解读取器
-  - `Processors`：各种处理器
-    - `SortComponentsProcessor`：组件排序
-    - `AppendResponseProcessor`：追加响应
-    - `MergeClassInfoProcessor`：合并类信息
-    - `XSchemaRequestProcessor`：X-Schema 请求处理
-    - `XSchemaResponseProcessor`：X-Schema 响应处理
-    - `ExpandDTOAttributionsProcessor`：DTO 属性扩展
-    - `ExpandEnumDescriptionProcessor`：枚举描述扩展
-    - `ExpandEloquentModelProcessor`：Eloquent 模型扩展
-- **Overwrite**：
-  - `Generator`：自定义 Generator
-  - `Analysis`：自定义 Analysis
-  - `Analysers/AttributeAnnotationFactory`：自定义注解工厂
-- **Helper**：
-  - `SwaggerHelper`：Swagger 助手
-- **Controller**：
-  - `OpenapiController`：OpenAPI 控制器
-- **DTO**：
-  - `SchemaConstants`：Schema 常量
-- **Enums**：
-  - `PropertyInEnum`：属性位置枚举
-- **Middleware**：
-  - `HostForbiddenMiddleware`：Host 禁止中间件
-
-### 目录结构
+## 目录结构
 - `src/`：
-  - `RouteAnnotation/`：路由注解相关
-  - `Overwrite/`：覆盖 swagger-php 的类
-  - `Helper/`：助手类
-  - `Controller/`：控制器
-  - `DTO/`：数据传输对象
-  - `Enums/`：枚举类
-  - `Middleware/`：中间件
+  - `Swagger.php`：主入口类
+  - `RouteAnnotation/`：路由注解解析
+    - `Reader.php`：注解读取器
+    - `Processors/`：各种文档处理器（ExpandDTO/ExpandEnum/ExpandEloquentModel/XSchema 等）
+    - `DTO/`：路由配置相关 DTO
+  - `Overwrite/`：覆盖 swagger-php 默认行为（Generator/Analysis/ReflectionAnalyser/Processors/Analysers）
+  - `Controller/`：
+    - `OpenapiController.php`：提供 OpenAPI JSON 及 Swagger UI 页面
+  - `DTO/`：各配置 DTO（OpenapiDoc/SwaggerUi/HostForbidden/RegisterRoute）
+  - `Enums/`：PropertyInEnum
+  - `Helper/`：SwaggerHelper/ConfigHelper/ArrayHelper/JsExpression
+  - `Middleware/`：HostForbiddenMiddleware
+  - `view/`：swagger-ui.php 视图模板
 - `copy/`：配置文件模板
 - `src/Install.php`：Webman 安装脚本
 

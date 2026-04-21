@@ -6,7 +6,6 @@ use WebmanTech\CommonUtils\Route;
 use WebmanTech\Swagger\Controller\OpenapiController;
 use WebmanTech\Swagger\DTO\ConfigRegisterRouteDTO;
 use WebmanTech\Swagger\Helper\ConfigHelper;
-use WebmanTech\Swagger\Middleware\HostForbiddenMiddleware;
 use WebmanTech\Swagger\RouteAnnotation\Reader;
 use function WebmanTech\CommonUtils\app_path;
 
@@ -43,7 +42,7 @@ final class Swagger
             throw new \InvalidArgumentException('openapi_doc.scan_path is required');
         }
 
-        $hostForbiddenMiddleware = new HostForbiddenMiddleware($config->host_forbidden);
+        $middlewares = $config->middlewares;
         $controller = new OpenapiController();
 
         $swaggerRoute = $config->route_prefix;
@@ -64,7 +63,7 @@ final class Swagger
                 $dtoGeneratorRoute,
                 fn() => $controller->dtoGenerator($dtoGeneratorConfig),
                 name: $routeName,
-                middlewares: $hostForbiddenMiddleware,
+                middlewares: $middlewares,
             ));
             if ($url = $routerRegister->getRouteByName($routeName)->getUrl(appendPrefix: true)) {
                 $config->swagger_ui->data['dto_generator_url'] = $url;
@@ -76,14 +75,14 @@ final class Swagger
             'GET',
             $swaggerRoute,
             fn() => $controller->swaggerUI($docUrl, $config->swagger_ui),
-            middlewares: $hostForbiddenMiddleware
+            middlewares: $middlewares
         ));
         // 注册 openapi doc 的路由
         $routerRegister->addRoute(new Route\RouteObject(
             'GET',
             $docRoute,
             fn() => $controller->openapiDoc($config->openapi_doc),
-            middlewares: $hostForbiddenMiddleware
+            middlewares: $middlewares
         ));
 
         // 注册 api 接口路由

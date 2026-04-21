@@ -37,6 +37,9 @@ final class SwaggerRegister
             'swagger_ui' => [
                 'tag_sort' => ['认证', '用户', '订单'],  // 控制 Tag 在 UI 中的排序
             ],
+            'basic_auth' => [
+                'enable' => false,     
+            ],
             'openapi_doc' => [
                 'scan_path' => fn() => [
                     Finder::create()->files()->name('*.php')
@@ -326,6 +329,8 @@ enum StatusEnum: string
 
 ## 安全配置
 
+### IP/Host 限制
+
 生产环境禁止外网访问文档：
 
 ```php
@@ -334,6 +339,46 @@ enum StatusEnum: string
     'ip_white_list_intranet' => true,  // 允许所有内网 IP
     'ip_white_list' => ['1.2.3.4'],    // 额外允许的 IP
     'host_white_list' => ['admin.example.com'],  // 允许的 host
+],
+```
+
+### Basic 认证
+
+需要用户名密码才能访问 Swagger UI：
+
+```php
+// config/plugin/webman-tech/swagger/app.php
+'basic_auth' => [
+    'enable' => true,
+    'username' => 'admin',
+    'password' => 'your-secure-password',
+    'realm' => 'API Documentation',  // 可选，认证提示信息
+],
+```
+
+也可以在 `registerRoute` 时通过 `global_route` 配置：
+
+```php
+'global_route' => [
+    'basic_auth' => [
+        'enable' => true,
+        'username' => 'admin',
+        'password' => 'secret',
+    ],
+],
+```
+
+两种安全机制（IP 限制 + Basic Auth）可以同时启用，按顺序执行。
+
+### 自定义中间件
+
+如需更复杂的认证（如基于 auth 包的登录认证），通过 `middlewares` 配置：
+
+```php
+'global_route' => [
+    'middlewares' => [
+        new \WebmanTech\Auth\Middleware\Authentication('admin'),
+    ],
 ],
 ```
 

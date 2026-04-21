@@ -34,7 +34,11 @@ composer require webman-tech/swagger
 
 #### ConfigRegisterRouteDTO
 
-路由注册配置，控制路由注册行为，包含启用开关（`enable`）、路由前缀（`route_prefix`）、访问权限控制（`host_forbidden`）、Swagger UI 配置（`swagger_ui`）、OpenAPI 文档配置（`openapi_doc`）及是否注册 webman 路由（`register_route`）。
+路由注册配置，控制路由注册行为，包含启用开关（`enable`）、路由前缀（`route_prefix`）、访问权限控制（`host_forbidden`）、Basic 认证（`basic_auth`）、Swagger UI 配置（`swagger_ui`）、OpenAPI 文档配置（`openapi_doc`）、是否注册 webman 路由（`register_route`）及额外中间件（`middlewares`）。
+
+#### ConfigBasicAuthDTO
+
+Basic 认证配置，默认关闭。启用后访问 Swagger UI 和 OpenAPI 文档时需要提供用户名和密码。支持配置用户名（`username`）、密码（`password`）和认证提示域（`realm`）。
 
 #### ConfigOpenapiDocDTO
 

@@ -12,6 +12,11 @@ return [
     'global_route' => [
         'enable' => true,
         'register_route' => false,
+        /**
+         * 额外的中间件，可用于添加 auth 认证等
+         * @see \WebmanTech\Swagger\DTO\ConfigRegisterRouteDTO::$middlewares
+         */
+        'middlewares' => [],
     ],
     /**
      * 全局的 host forbidden 配置
@@ -20,6 +25,15 @@ return [
     'host_forbidden' => [
         'enable' => true,
         'host_white_list' => [],
+    ],
+    /**
+     * 全局的 Basic Auth 配置
+     * @see \WebmanTech\Swagger\DTO\ConfigBasicAuthDTO
+     */
+    'basic_auth' => [
+        'enable' => false,
+        'username' => '',
+        'password' => '',
     ],
     /**
      * 全局的 swagger ui 配置

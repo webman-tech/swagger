@@ -6,7 +6,7 @@
 - **零配置启动**：安装后直接访问 `/openapi` 即可看到 Swagger UI
 - **多文档支持**：单应用下多个 Swagger 文档
 - **动态配置**：动态修改注解下的 Swagger 文档
-- **丰富配置**：host 限制、Swagger UI 配置、OpenAPI 配置
+- **丰富配置**：host 限制、Swagger UI 配置、OpenAPI 配置、自定义中间件（auth 等）
 - **性能优化**：服务启动后缓存，开发环境自动更新
 - **路由自动注册**：支持自动注册 webman 路由
 - **跨框架兼容**：不仅仅支持 webman
@@ -25,10 +25,10 @@
   - `Overwrite/`：覆盖 swagger-php 默认行为（Generator/Analysis/ReflectionAnalyser/Processors/Analysers）
   - `Controller/`：
     - `OpenapiController.php`：提供 OpenAPI JSON 及 Swagger UI 页面
-  - `DTO/`：各配置 DTO（OpenapiDoc/SwaggerUi/HostForbidden/RegisterRoute）
+  - `DTO/`：各配置 DTO（OpenapiDoc/SwaggerUi/HostForbidden/BasicAuth/RegisterRoute）
   - `Enums/`：PropertyInEnum
   - `Helper/`：SwaggerHelper/ConfigHelper/ArrayHelper/JsExpression
-  - `Middleware/`：HostForbiddenMiddleware
+  - `Middleware/`：HostForbiddenMiddleware、BasicAuthMiddleware
   - `view/`：swagger-ui.php 视图模板
 - `copy/`：配置文件模板
 - `skills/`：AI 技能

@@ -84,7 +84,7 @@ final class XSchemaRequestProcessor
                     // $class@method 的形式
                     [$class] = $classMethod = explode('@', $schema);
                 }
-                $schema = $this->analysis->getSchemaForSource($class);
+                $schema = $this->analysis->getAnnotationForSource($class);
                 if (!$schema instanceof AnSchema) {
                     throw new \InvalidArgumentException(sprintf('Class `%s` not exists, in %s', $class, $operation->_context));
                 }
@@ -109,7 +109,7 @@ final class XSchemaRequestProcessor
         }
         // schema 是 ref 的情况下，取到真实的 schema
         if (!Generator::isDefault($schema->ref)) {
-            $schema = $this->analysis->getSchemaForSource(SwaggerHelper::getAnnotationClassName($schema));
+            $schema = $this->analysis->getAnnotationForSource(SwaggerHelper::getAnnotationClassName($schema));
         }
         if (!$schema) {
             return;
@@ -147,7 +147,7 @@ final class XSchemaRequestProcessor
         }
         if (!Generator::isDefault($schema->ref)) {
             // 使用 ref 的情况，取真实 schema
-            $schema = $this->analysis->getSchemaForSource(SwaggerHelper::getAnnotationClassName($schema));
+            $schema = $this->analysis->getAnnotationForSource(SwaggerHelper::getAnnotationClassName($schema));
             if (!$schema) {
                 return 0;
             }
@@ -166,11 +166,8 @@ final class XSchemaRequestProcessor
         }
 
         foreach (SwaggerHelper::getValue($schema->properties, []) as $property) {
-            /** @var array $types */
-            $types = SwaggerHelper::getAnnotationXValue($property, SchemaConstants::X_PROPERTY_TYPES, array_filter([
-                $property->_context->type,
-            ]));
-            if (!$types) {
+            $types = SwaggerHelper::getPropertyContextTypes($property);
+            if (!is_array($types)) {
                 continue;
             }
             // 有其中一个属性是
@@ -193,7 +190,7 @@ final class XSchemaRequestProcessor
             SwaggerHelper::getValue($operation->parameters, []),
             $this->transferSchemaProperties2parameters($schema, $operation->_context, $propertyIn),
         );
-        $operation->parameters = $parameters;
+        $operation->parameters = array_values($parameters);
     }
 
     private function transferSchemaProperties2parameters(AnSchema $schema, Context $context, PropertyInEnum $propertyIn): array
@@ -210,7 +207,7 @@ final class XSchemaRequestProcessor
         }
         // schema 是 ref 的情况下，取到真实的 schema
         if (!Generator::isDefault($schema->ref)) {
-            $schema = $this->analysis->getSchemaForSource(SwaggerHelper::getAnnotationClassName($schema));
+            $schema = $this->analysis->getAnnotationForSource(SwaggerHelper::getAnnotationClassName($schema));
             if ($schema) {
                 $parameters = $this->transferSchemaProperties2parameters($schema, $context, $propertyIn);
             }

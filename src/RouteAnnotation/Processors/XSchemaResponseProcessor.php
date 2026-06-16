@@ -7,7 +7,6 @@ use OpenApi\Annotations\Operation as AnOperation;
 use OpenApi\Annotations\Property as AnProperty;
 use OpenApi\Annotations\Response as AnResponse;
 use OpenApi\Annotations\Schema as AnSchema;
-use OpenApi\Attributes\Response;
 use OpenApi\Attributes\Schema;
 use OpenApi\Context;
 use OpenApi\Generator;
@@ -36,7 +35,7 @@ final class XSchemaResponseProcessor
             }
             $propertyDefaultIn = PropertyInEnum::Json;
             foreach ($schemaList as $statusCode => $schemas) {
-                $response = $this->getResponse($operation, $statusCode);
+                $response = SwaggerHelper::getOrCreateOperationResponse($operation, $statusCode);
                 foreach ($schemas as $schema) {
                     // 根据 property in 所在的地方，将数据转移到不同上面
                     $propertyIn = PropertyInEnum::tryFromSchemaX($schema, $propertyDefaultIn);
@@ -95,7 +94,7 @@ final class XSchemaResponseProcessor
                 // 字符串的形式
                 if (class_exists($schema) || trait_exists($schema) || interface_exists($schema)) {
                     $class = $schema;
-                    $schema = $this->analysis->getSchemaForSource($class);
+                    $schema = $this->analysis->getAnnotationForSource($class);
                     if (!$schema instanceof AnSchema) {
                         throw new \InvalidArgumentException(sprintf('Class `%s` is not schema(not scan?), in %s', $class, $operation->_context));
                     }
@@ -112,20 +111,6 @@ final class XSchemaResponseProcessor
         }, $schemaList), $schemaList);
     }
 
-    private function getResponse(AnOperation $operation, int $statusCode): AnResponse
-    {
-        if (Generator::isDefault($operation->responses)) {
-            $operation->responses = [];
-        }
-        if (!isset($operation->responses[$statusCode])) {
-            $operation->responses[$statusCode] = new Response(
-                response: $statusCode,
-                description: 'OK',
-            );
-        }
-        return $operation->responses[$statusCode];
-    }
-
     private function addXInProperties(AnResponse $response, AnSchema $schema): void
     {
         // allOf 的逐个处理掉
@@ -136,7 +121,7 @@ final class XSchemaResponseProcessor
         }
         // schema 是 ref 的情况下，取到真实的 schema
         if (!Generator::isDefault($schema->ref)) {
-            $schema = $this->analysis->getSchemaForSource(SwaggerHelper::getAnnotationClassName($schema));
+            $schema = $this->analysis->getAnnotationForSource(SwaggerHelper::getAnnotationClassName($schema));
         }
         if (!$schema) {
             return;
@@ -176,7 +161,7 @@ final class XSchemaResponseProcessor
     {
         // 如果是 ref，检查真实的 schema
         if (!Generator::isDefault($schema->ref)) {
-            $realSchema = $this->analysis->getSchemaForSource(SwaggerHelper::getAnnotationClassName($schema));
+            $realSchema = $this->analysis->getAnnotationForSource(SwaggerHelper::getAnnotationClassName($schema));
             if ($realSchema) {
                 return $this->isEmptySchema($realSchema);
             }
@@ -208,7 +193,7 @@ final class XSchemaResponseProcessor
             SwaggerHelper::getValue($response->headers, []),
             $this->transferSchemaProperties2headers($schema, $response->_context),
         );
-        $response->headers = $headers;
+        $response->headers = array_values($headers);
     }
 
     private function transferSchemaProperties2headers(AnSchema $schema, Context $context): array
@@ -235,14 +220,7 @@ final class XSchemaResponseProcessor
 
     private function add2responseBodyUseSchema(AnResponse $response, AnSchema $schema): void
     {
-        $mediaSchema = new Schema(
-            description: SwaggerHelper::getValue($schema->description),
-            type: 'string',
-            format: 'binary',
-            nullable: SwaggerHelper::getValue($schema->nullable),
-        );
-
         $mediaType = SwaggerHelper::getResponseMediaType($response, 'application/octet-stream');
-        $mediaType->schema = $mediaSchema;
+        $mediaType->schema = SwaggerHelper::renewBinarySchema($schema);
     }
 }

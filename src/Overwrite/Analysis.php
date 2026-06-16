@@ -2,7 +2,7 @@
 
 namespace WebmanTech\Swagger\Overwrite;
 
-use OpenApi\Annotations\Schema as AnSchema;
+use OpenApi\Annotations as OA;
 
 /**
  * @internal
@@ -19,10 +19,10 @@ final class Analysis extends \OpenApi\Analysis
     /**
      * @inheritDoc
      */
-    public function getSchemaForSource(string $fqdn): ?AnSchema
+    public function getAnnotationForSource(string $fqdn, string $sourceClass = OA\Schema::class): ?OA\AbstractAnnotation
     {
-        $schema = parent::getSchemaForSource($fqdn);
-        if ($this->schemaNameFormatter && $schema && $schema->isRoot(AnSchema::class)) {
+        $schema = parent::getAnnotationForSource($fqdn, $sourceClass);
+        if ($this->schemaNameFormatter && $schema && $schema->isRoot(OA\Schema::class)) {
             call_user_func($this->schemaNameFormatter, $schema);
         }
         return $schema;

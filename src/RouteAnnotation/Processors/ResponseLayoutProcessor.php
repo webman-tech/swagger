@@ -51,8 +51,7 @@ final class ResponseLayoutProcessor
             $layoutSchema = $layoutClass === $undefinedOperationLayoutKey ? $globalLayoutSchema : $this->getLayoutSchema($layoutClass);
             $layoutDataCode = SwaggerHelper::getAnnotationXValue($operation, SchemaConstants::X_RESPONSE_LAYOUT_DATA_CODE, $this->layoutDataCode, remove: true);
 
-            /** @var AnResponse|null $response */
-            $response = SwaggerHelper::getValue($operation->responses, [])[200] ?? null;
+            $response = SwaggerHelper::getOperationResponse($operation, 200);
             if (!$response) {
                 continue;
             }
@@ -99,7 +98,7 @@ final class ResponseLayoutProcessor
 
     private function getLayoutSchema(string $layoutClass): AnSchema
     {
-        $schema = $this->analysis->getSchemaForSource($layoutClass);
+        $schema = $this->analysis->getAnnotationForSource($layoutClass);
         if (!$schema) {
             throw new \InvalidArgumentException("layoutClass({$layoutClass}) must defined as schema（Not in scanned path?）");
         }

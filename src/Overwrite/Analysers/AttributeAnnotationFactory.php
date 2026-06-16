@@ -7,7 +7,6 @@ use OpenApi\Annotations\Schema as AnSchema;
 use OpenApi\Attributes\Property;
 use OpenApi\Attributes\Schema;
 use OpenApi\Context;
-use OpenApi\Processors\Concerns\TypesTrait;
 use ReflectionAttribute;
 use ReflectionClass;
 use ReflectionEnum;
@@ -15,8 +14,6 @@ use ReflectionProperty;
 
 class AttributeAnnotationFactory extends \OpenApi\Analysers\AttributeAnnotationFactory
 {
-    use TypesTrait;
-
     private Context $buildContext;
 
     public function __construct(
@@ -65,7 +62,8 @@ class AttributeAnnotationFactory extends \OpenApi\Analysers\AttributeAnnotationF
             // 设置枚举的类型，否则默认会取 枚举 的键名
             /** @phpstan-ignore-next-line */
             $reflectorEnum = new ReflectionEnum($reflector->getName());
-            $this->mapNativeType($schema, $reflectorEnum->getBackingType()?->getName() ?? 'string');
+            $backingType = $reflectorEnum->getBackingType()?->getName() ?? 'string';
+            $this->generator?->getTypeResolver()->mapNativeType($schema, $backingType);
         }
 
         return $schema;

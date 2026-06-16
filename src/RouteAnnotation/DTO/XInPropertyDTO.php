@@ -89,13 +89,7 @@ final class XInPropertyDTO
                 // body 参数仅能设置一次
                 return;
             }
-            $mediaSchema = new Schema(
-                description: SwaggerHelper::getValue($this->property->description),
-                type: 'string',
-                format: 'binary',
-                nullable: SwaggerHelper::getValue($this->property->nullable),
-            );
-            $mediaType->schema = $mediaSchema;
+            $mediaType->schema = SwaggerHelper::renewBinarySchema($this->property);
         } elseif ($this->in === PropertyInEnum::Json) {
             $mediaType = SwaggerHelper::getOperationRequestBodyMediaType($operation, 'application/json');
             $schema = new Schema(
@@ -128,13 +122,7 @@ final class XInPropertyDTO
                 // body 参数仅能设置一次
                 return;
             }
-            $mediaSchema = new Schema(
-                description: SwaggerHelper::getValue($this->property->description),
-                type: 'string',
-                format: 'binary',
-                nullable: SwaggerHelper::getValue($this->property->nullable),
-            );
-            $mediaType->schema = $mediaSchema;
+            $mediaType->schema = SwaggerHelper::renewBinarySchema($this->property);
         } elseif ($this->in === PropertyInEnum::Json) {
             $mediaType = SwaggerHelper::getResponseMediaType($response, 'application/json');
             $schema = new Schema(

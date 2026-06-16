@@ -44,7 +44,7 @@ final readonly class ExpandEnumDescriptionProcessor
             if (!Generator::isDefault($schema->enum) && $schema->_context->is('enum')) {
                 $className = $schema->_context->fullyQualifiedName($schema->_context->enum);
                 $caseDesc = [];
-                if (is_a($className, \BackedEnum::class, true)) {
+                if ($className !== null && is_a($className, \BackedEnum::class, true)) {
                     foreach ($schema->enum as $item) {
                         $case = $className::tryFrom($item);
                         if (!$case) {

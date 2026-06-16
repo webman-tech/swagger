@@ -4,8 +4,8 @@ namespace WebmanTech\Swagger\RouteAnnotation\Processors;
 
 use OpenApi\Analysis;
 use OpenApi\Annotations\Operation as AnOperation;
-use OpenApi\Attributes\Response;
 use OpenApi\Generator;
+use WebmanTech\Swagger\Helper\SwaggerHelper;
 
 /**
  * 给 Operation 添加必须的 response
@@ -18,14 +18,8 @@ final class AppendResponseProcessor
         $operations = $analysis->getAnnotationsOfType(AnOperation::class);
 
         foreach ($operations as $operation) {
-            if (Generator::isDefault($operation->responses)) {
-                $operation->responses = [];
-            }
-            if (count($operation->responses) === 0) {
-                $operation->responses[200] = new Response(
-                    response: 200,
-                    description: 'OK',
-                );
+            if (Generator::isDefault($operation->responses) || count($operation->responses) === 0) {
+                SwaggerHelper::getOrCreateOperationResponse($operation);
             }
         }
     }

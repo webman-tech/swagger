@@ -6,15 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 use OpenApi\Analysis;
 use OpenApi\Annotations\Schema as AnSchema;
 use OpenApi\Attributes\Property;
-use OpenApi\Processors\Concerns\TypesTrait;
+use OpenApi\Generator;
+use OpenApi\GeneratorAwareInterface;
+use OpenApi\GeneratorAwareTrait;
 use WebmanTech\Swagger\Helper\SwaggerHelper;
 
 /**
  * 自动扫描 Eloquent Model 的属性，生成 Schema 的 属性
  */
-final class ExpandEloquentModelProcessor
+final class ExpandEloquentModelProcessor implements GeneratorAwareInterface
 {
-    use TypesTrait;
+    use GeneratorAwareTrait;
 
     public function __construct(
         private bool $enabled = true,
@@ -39,13 +41,13 @@ final class ExpandEloquentModelProcessor
                 continue;
             }
             $className = $schema->_context->fullyQualifiedName($schema->_context->class);
-            if (!is_a($className, Model::class, true)) {
+            if ($className === null || !is_a($className, Model::class, true)) {
                 continue;
             }
-            $schema->properties = array_merge(
+            $schema->properties = array_values(array_merge(
                 SwaggerHelper::getValue($schema->properties, []),
                 $this->getModelProperties($className),
-            );
+            ));
         }
     }
 
@@ -100,7 +102,7 @@ final class ExpandEloquentModelProcessor
                     property: $name,
                     description: $desc,
                 );
-                $this->mapNativeType($property, $type);
+                ($this->generator ?? new Generator())->getTypeResolver()->mapNativeType($property, $type);
                 if ($nullable) {
                     $property->nullable = true;
                 }

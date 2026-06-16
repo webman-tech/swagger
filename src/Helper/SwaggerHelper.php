@@ -14,10 +14,13 @@ use OpenApi\Annotations\Schema as AnSchema;
 use OpenApi\Attributes\Components;
 use OpenApi\Attributes\MediaType;
 use OpenApi\Attributes\RequestBody;
+use OpenApi\Attributes\Response;
 use OpenApi\Attributes\Schema;
 use OpenApi\Generator;
+use ReflectionNamedType;
 use Symfony\Component\HttpFoundation\File\UploadedFile as SymfonyUploadedFile;
 use Webman\Http\UploadFile as WebmanUploadedFile;
+use WebmanTech\Swagger\DTO\SchemaConstants;
 use WebmanTech\Swagger\Enums\PropertyInEnum;
 use WebmanTech\Swagger\RouteAnnotation\DTO\XInPropertyDTO;
 
@@ -72,7 +75,32 @@ final class SwaggerHelper
             );
         }
 
-        return $className;
+        return $className ?: '';
+    }
+
+    /**
+     * 获取 property 的类型名称列表
+     *
+     * 优先从 x-property-types 获取，其次从 context reflector 获取
+     *
+     * @return string[]|null
+     */
+    public static function getPropertyContextTypes(AnProperty $property): ?array
+    {
+        $types = self::getAnnotationXValue($property, SchemaConstants::X_PROPERTY_TYPES);
+        if (is_array($types)) {
+            return array_values(array_filter($types, is_string(...)));
+        }
+
+        $contextReflector = $property->_context->reflector;
+        if ($contextReflector instanceof \ReflectionProperty) {
+            $contextReflectorType = $contextReflector->getType();
+            if ($contextReflectorType instanceof ReflectionNamedType) {
+                return [$contextReflectorType->getName()];
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -148,6 +176,19 @@ final class SwaggerHelper
         ], fn($item) => $item !== null));
         $schema->_context = $property->_context;
         return $schema;
+    }
+
+    /**
+     * 通过 property/schema 构造二进制响应体 Schema
+     */
+    public static function renewBinarySchema(AnProperty|AnSchema $source): AnSchema
+    {
+        return new Schema(
+            description: SwaggerHelper::getValue($source->description, Generator::UNDEFINED),
+            type: 'string',
+            format: 'binary',
+            nullable: SwaggerHelper::getValue($source->nullable),
+        );
     }
 
     /**
@@ -231,6 +272,39 @@ final class SwaggerHelper
     }
 
     /**
+     * 获取 operation 上指定状态码的 response
+     */
+    public static function getOperationResponse(AnOperation $operation, int $statusCode): ?AnResponse
+    {
+        foreach (SwaggerHelper::getValue($operation->responses, []) as $response) {
+            if (intval(SwaggerHelper::getValue($response->response)) === $statusCode) {
+                return $response;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 获取或创建 operation 上指定状态码的 response
+     */
+    public static function getOrCreateOperationResponse(AnOperation $operation, int $statusCode = 200, string $description = 'OK'): AnResponse
+    {
+        if (Generator::isDefault($operation->responses)) {
+            $operation->responses = [];
+        }
+        $response = self::getOperationResponse($operation, $statusCode);
+        if ($response) {
+            return $response;
+        }
+        $response = new Response(
+            response: $statusCode,
+            description: $description,
+        );
+        $operation->responses = [...$operation->responses, $response];
+        return $response;
+    }
+
+    /**
      * 将 schema 添加到 mediaType
      * @param string $combineType 组合类型，支持 'allOf' 或 'oneOf'
      */
@@ -244,7 +318,7 @@ final class SwaggerHelper
         // 附加用的 schema，如果可以用 ref 的话，使用 ref
         $appendSchema = $schema;
         if (!Generator::isDefault($schema->schema)) {
-            $refSchema = $analysis->getSchemaForSource(SwaggerHelper::getAnnotationClassName($schema));
+            $refSchema = $analysis->getAnnotationForSource(SwaggerHelper::getAnnotationClassName($schema));
             if ($refSchema) {
                 $appendSchema = new Schema(ref: Components::ref($schema));
             } else {
@@ -342,7 +416,7 @@ final class SwaggerHelper
     public static function hasXInBodyProperty(Analysis $analysis, AnSchema $schema): bool
     {
         if (!Generator::isDefault($schema->ref)) {
-            $schema = $analysis->getSchemaForSource(SwaggerHelper::getAnnotationClassName($schema));
+            $schema = $analysis->getAnnotationForSource(SwaggerHelper::getAnnotationClassName($schema));
             if (!$schema) {
                 return false;
             }

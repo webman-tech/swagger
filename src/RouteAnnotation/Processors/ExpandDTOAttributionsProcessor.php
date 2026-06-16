@@ -93,7 +93,7 @@ final class ExpandDTOAttributionsProcessor
                     // 修正 example 类型
                     $this->fixExample($property);
                 }
-                SwaggerHelper::setValue($schema->required, $schemaRequired);
+                SwaggerHelper::setValue($schema->required, array_values($schemaRequired));
             }
 
             if ($this->appendValidationRulesInDescription && is_a($className, BaseRequestDTO::class, true)) {
@@ -110,19 +110,14 @@ final class ExpandDTOAttributionsProcessor
             return;
         }
         // 自定义类型
-        $types = SwaggerHelper::getAnnotationXValue($property, SchemaConstants::X_PROPERTY_TYPES, array_filter([
-            // 默认先取 swagger-php 已经取到的类型
-            $property->_context->type,
-        ]));
+        $types = SwaggerHelper::getPropertyContextTypes($property);
         if ($types) {
             $this->fixUploadedFileType($property, $types);
             return;
         }
-        // 没有类型定义的情况
-        // 1. 本身代码就没定义类型
-        // 2. swagger-php 不能解析联合类型（此处做支持）
+        // swagger-php 不能解析联合类型（此处做支持）
         $types = [];
-        if (!$property->_context->type && $property->_context->property) {
+        if ($property->_context->property) {
             /** @var class-string $className */
             $className = SwaggerHelper::getAnnotationClassName($property);
             $reflectPropertyType = (new ReflectionProperty($className, $property->_context->property))
@@ -231,16 +226,18 @@ final class ExpandDTOAttributionsProcessor
                     }
                     $this->fillPropertyByValidationRules($newProperty, $validationRules->arrayItem, $newRequired);
                     $schemaItems = SwaggerHelper::renewSchemaWithProperty($newProperty, AnItems::class);
-                    SwaggerHelper::setValue($schemaItems->required, $newRequired);
+                    SwaggerHelper::setValue($schemaItems->required, array_values($newRequired));
                 } elseif (is_string($validationRules->arrayItem) && class_exists($validationRules->arrayItem)) {
-                    if ($schemaNew = $this->analysis->getSchemaForSource($validationRules->arrayItem)) {
+                    if ($schemaNew = $this->analysis->getAnnotationForSource($validationRules->arrayItem)) {
                         $schemaItems = new Items(ref: Components::ref($schemaNew));
                     }
                 }
                 $property->items = $schemaItems ?? new Items();
             }
         }
-        if ($property->type === 'object' && $validationRules->arrayItem && Generator::isDefault($property->additionalProperties)) {
+        if ($property->type === 'object' && $validationRules->arrayItem) {
+            // v6.1.2+ 上游可能已创建 additionalProperties（如从 @var 解析 nullable oneOf），
+            // 但 DTO 校验规则是更权威的来源，因此始终覆盖
             // 定义为对象
             if ($validationRules->arrayItem instanceof ValidationRules) {
                 // 检查是否是嵌套数组（arrayItem 也有 arrayItem，表示 value 是数组类型）
@@ -253,7 +250,7 @@ final class ExpandDTOAttributionsProcessor
                     if ($validationRules->arrayItem->arrayItem instanceof ValidationRules) {
                         $this->fillPropertyByValidationRules($newProperty, $validationRules->arrayItem->arrayItem, $newRequired);
                     } elseif (is_string($validationRules->arrayItem->arrayItem) && class_exists($validationRules->arrayItem->arrayItem)) {
-                        if ($schemaNew = $this->analysis->getSchemaForSource($validationRules->arrayItem->arrayItem)) {
+                        if ($schemaNew = $this->analysis->getAnnotationForSource($validationRules->arrayItem->arrayItem)) {
                             $newProperty->items = new Items(ref: Components::ref($schemaNew));
                         }
                     }
@@ -286,7 +283,7 @@ final class ExpandDTOAttributionsProcessor
                     }
                 }
             } elseif (is_string($validationRules->arrayItem) && class_exists($validationRules->arrayItem)) {
-                if ($schemaNew = $this->analysis->getSchemaForSource($validationRules->arrayItem)) {
+                if ($schemaNew = $this->analysis->getAnnotationForSource($validationRules->arrayItem)) {
                     $property->additionalProperties = $this->makeAdditionalProperties(
                         ref: Components::ref($schemaNew),
                         nullable: $validationRules->objectValueNullable ?? $validationRules->nullable,

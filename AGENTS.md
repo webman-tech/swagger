@@ -65,11 +65,11 @@ OpenAPI JSON (缓存，生产环境启动时生成)
 
 ## 注意事项
 
-1. **当前版本**：使用 swagger-php v5 (>=5.2 <5.5)
+1. **当前版本**：使用 swagger-php v6 (^6.2)
 2. **API 方法**：
-   - 使用 `getSchemaForSource()` 获取 Schema
-   - 使用 `$analysis->process([new Processor()])` 调用处理器
-3. **TypesTrait**：可以使用 `OpenApi\Processors\Concerns\TypesTrait` 进行类型映射
+   - 使用 `getAnnotationForSource()` 获取注解（替代 v5 的 `getSchemaForSource()`）
+   - v6 移除了 `Analysis::process()`，调用处理器需通过 Generator 的 Pipeline
+3. **类型映射**：v6 移除了 `TypesTrait`，改用 `Generator` 注入的 `getTypeResolver()`（实现 `GeneratorAwareInterface` + `GeneratorAwareTrait`）
 4. **性能优化**：
    - 生产环境使用缓存
    - 开发环境自动更新文档

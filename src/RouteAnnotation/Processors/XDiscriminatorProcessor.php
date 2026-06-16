@@ -73,7 +73,7 @@ final class XDiscriminatorProcessor
                 continue;
             }
 
-            $childSchema = $this->analysis->getSchemaForSource($dtoClass);
+            $childSchema = $this->analysis->getAnnotationForSource($dtoClass);
             if (!$childSchema) {
                 continue;
             }

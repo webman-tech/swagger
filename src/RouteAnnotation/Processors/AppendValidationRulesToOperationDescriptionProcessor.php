@@ -42,6 +42,7 @@ final class AppendValidationRulesToOperationDescriptionProcessor
 
         $mergedValidationRules = [];
         foreach ($operation->requestBody->content as $mediaType) {
+            /** @phpstan-ignore-next-line instanceof.alwaysTrue — stub 简化了 content 元素类型，运行时可能含非 MediaType 值 */
             if (!$mediaType instanceof AnMediaType || Generator::isDefault($mediaType->schema)) {
                 continue;
             }
@@ -68,7 +69,7 @@ final class AppendValidationRulesToOperationDescriptionProcessor
     {
         $schemas = [];
 
-        if (!Generator::isDefault($schema->ref)) {
+        if (is_string($schema->ref) && !Generator::isDefault($schema->ref)) {
             $resolved = $this->findSchemaByRef($schema->ref, $analysis);
             if ($resolved) {
                 $schemas[] = $resolved;
@@ -78,6 +79,7 @@ final class AppendValidationRulesToOperationDescriptionProcessor
         foreach (['allOf', 'oneOf', 'anyOf'] as $combineType) {
             $children = SwaggerHelper::getValue($schema->{$combineType}, []);
             foreach ($children as $childSchema) {
+                /** @phpstan-ignore-next-line instanceof.alwaysTrue — Attributes\Schema 继承自 Annotations\Schema，运行时含混合注解类型 */
                 if ($childSchema instanceof AnSchema) {
                     $schemas = array_merge($schemas, $this->resolveRequestSchemas($childSchema, $analysis));
                 }
@@ -98,8 +100,13 @@ final class AppendValidationRulesToOperationDescriptionProcessor
             return null;
         }
         $schemaName = substr($ref, strlen($prefix));
-        $componentSchemas = SwaggerHelper::getValue($analysis->openapi->components->schemas, []);
+        $openapi = $analysis->openapi;
+        if ($openapi === null || Generator::isDefault($openapi->components)) {
+            return null;
+        }
+        $componentSchemas = SwaggerHelper::getValue($openapi->components->schemas, []);
         foreach ($componentSchemas as $schema) {
+            /** @phpstan-ignore-next-line instanceof.alwaysTrue — 运行时 schemas 可能含非 Schema 的 Attachable 等元素 */
             if ($schema instanceof AnSchema && SwaggerHelper::getValue($schema->schema) === $schemaName) {
                 return $schema;
             }

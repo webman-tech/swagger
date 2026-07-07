@@ -12,7 +12,7 @@ use OpenApi\Attributes\Components;
 use OpenApi\Attributes\Parameter;
 use OpenApi\Attributes\Property;
 use OpenApi\Attributes\Schema;
-use OpenApi\Generator;
+use OpenApi\Undefined;
 use WebmanTech\Swagger\Enums\PropertyInEnum;
 use WebmanTech\Swagger\Helper\SwaggerHelper;
 
@@ -32,7 +32,7 @@ final class XInPropertyDTO
     )
     {
         if ($this->refFromPrefix === null) {
-            if (Generator::isDefault($this->schema->schema)) {
+            if (Undefined::isDefault($this->schema->schema)) {
                 throw new \InvalidArgumentException('schema->schema is required');
             }
             $this->refFromPrefix = Components::ref($schema);
@@ -85,7 +85,7 @@ final class XInPropertyDTO
             $operation->parameters = $parameters;
         } elseif ($this->in === PropertyInEnum::Body) {
             $mediaType = SwaggerHelper::getOperationRequestBodyMediaType($operation, 'application/octet-stream');
-            if (!Generator::isDefault($mediaType->schema)) {
+            if (!Undefined::isDefault($mediaType->schema)) {
                 // body 参数仅能设置一次
                 return;
             }
@@ -118,7 +118,7 @@ final class XInPropertyDTO
             $response->headers = $headers;
         } elseif ($this->in === PropertyInEnum::Body) {
             $mediaType = SwaggerHelper::getResponseMediaType($response, 'application/octet-stream');
-            if (!Generator::isDefault($mediaType->schema)) {
+            if (!Undefined::isDefault($mediaType->schema)) {
                 // body 参数仅能设置一次
                 return;
             }
@@ -192,7 +192,7 @@ final class XInPropertyDTO
     private function getSchemaBasedName(string $name): string
     {
         $schemaName = $this->schema->schema;
-        if (Generator::isDefault($schemaName)) {
+        if (Undefined::isDefault($schemaName)) {
             // 虽然 construct 中对此做了检查，但可能存在初始化后，schema 被更改的可能
             $schemaName = Str::of(SwaggerHelper::getAnnotationClassName($this->schema))
                 ->replace('\\', '')

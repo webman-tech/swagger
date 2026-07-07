@@ -16,7 +16,7 @@ use OpenApi\Attributes\MediaType;
 use OpenApi\Attributes\RequestBody;
 use OpenApi\Attributes\Response;
 use OpenApi\Attributes\Schema;
-use OpenApi\Generator;
+use OpenApi\Undefined;
 use ReflectionNamedType;
 use Symfony\Component\HttpFoundation\File\UploadedFile as SymfonyUploadedFile;
 use Webman\Http\UploadFile as WebmanUploadedFile;
@@ -39,7 +39,7 @@ final class SwaggerHelper
      */
     public static function getValue(mixed $value, mixed $default = null): mixed
     {
-        return Generator::isDefault($value) ? $default : $value;
+        return Undefined::isDefault($value) ? $default : $value;
     }
 
     /**
@@ -50,7 +50,7 @@ final class SwaggerHelper
     public static function setValue(mixed &$key, mixed $value): void
     {
         /** @phpstan-ignore-next-line */
-        $key = $value ?: Generator::UNDEFINED;
+        $key = $value ?: Undefined::UNDEFINED;
     }
 
     /**
@@ -108,7 +108,7 @@ final class SwaggerHelper
      */
     public static function getAnnotationXValue(AbstractAnnotation $annotation, string $key, mixed $default = null, bool $remove = false): mixed
     {
-        if (!Generator::isDefault($annotation->x) && array_key_exists($key, $annotation->x)) {
+        if (!Undefined::isDefault($annotation->x) && array_key_exists($key, $annotation->x)) {
             $value = $annotation->x[$key];
             if ($remove) {
                 SwaggerHelper::removeAnnotationXValue($annotation, $key);
@@ -123,7 +123,7 @@ final class SwaggerHelper
      */
     public static function setAnnotationXValue(AbstractAnnotation $annotation, string $key, mixed $value): void
     {
-        if (Generator::isDefault($annotation->x)) {
+        if (Undefined::isDefault($annotation->x)) {
             $annotation->x = [];
         }
         $annotation->x[$key] = $value;
@@ -134,7 +134,7 @@ final class SwaggerHelper
      */
     public static function removeAnnotationXValue(AbstractAnnotation $annotation, string|array $keys): void
     {
-        if (Generator::isDefault($annotation->x)) {
+        if (Undefined::isDefault($annotation->x)) {
             return;
         }
         $keys = is_array($keys) ? $keys : [$keys];
@@ -145,7 +145,7 @@ final class SwaggerHelper
         }
         if (!$annotation->x) {
             /** @phpstan-ignore-next-line */
-            $annotation->x = Generator::UNDEFINED;
+            $annotation->x = Undefined::UNDEFINED;
         }
     }
 
@@ -184,7 +184,7 @@ final class SwaggerHelper
     public static function renewBinarySchema(AnProperty|AnSchema $source): AnSchema
     {
         return new Schema(
-            description: SwaggerHelper::getValue($source->description, Generator::UNDEFINED),
+            description: SwaggerHelper::getValue($source->description, Undefined::UNDEFINED),
             type: 'string',
             format: 'binary',
             nullable: SwaggerHelper::getValue($source->nullable),
@@ -241,10 +241,10 @@ final class SwaggerHelper
      */
     public static function getOperationRequestBodyMediaType(AnOperation $operation, string $mediaType): AnMediaType
     {
-        if (Generator::isDefault($operation->requestBody)) {
+        if (Undefined::isDefault($operation->requestBody)) {
             $operation->requestBody = new RequestBody();
         }
-        if (Generator::isDefault($operation->requestBody->content)) {
+        if (Undefined::isDefault($operation->requestBody->content)) {
             $operation->requestBody->content = [];
         }
         if (!isset($operation->requestBody->content[$mediaType])) {
@@ -260,7 +260,7 @@ final class SwaggerHelper
      */
     public static function getResponseMediaType(AnResponse $response, string $mediaType): AnMediaType
     {
-        if (Generator::isDefault($response->content)) {
+        if (Undefined::isDefault($response->content)) {
             $response->content = [];
         }
         if (!isset($response->content[$mediaType])) {
@@ -289,7 +289,7 @@ final class SwaggerHelper
      */
     public static function getOrCreateOperationResponse(AnOperation $operation, int $statusCode = 200, string $description = 'OK'): AnResponse
     {
-        if (Generator::isDefault($operation->responses)) {
+        if (Undefined::isDefault($operation->responses)) {
             $operation->responses = [];
         }
         $response = self::getOperationResponse($operation, $statusCode);
@@ -311,18 +311,18 @@ final class SwaggerHelper
     public static function appendSchema2mediaType(AnMediaType $mediaType, AnSchema $schema, Analysis $analysis, string $combineType = 'allOf'): void
     {
         $isMediaTypeSchemaEmpty = false;
-        if (Generator::isDefault($mediaType->schema)) {
+        if (Undefined::isDefault($mediaType->schema)) {
             $mediaType->schema = new Schema();
             $isMediaTypeSchemaEmpty = true;
         }
         // 附加用的 schema，如果可以用 ref 的话，使用 ref
         $appendSchema = $schema;
-        if (!Generator::isDefault($schema->schema)) {
+        if (!Undefined::isDefault($schema->schema)) {
             $refSchema = $analysis->getAnnotationForSource(SwaggerHelper::getAnnotationClassName($schema));
             if ($refSchema) {
                 $appendSchema = new Schema(ref: Components::ref($schema));
             } else {
-                $appendSchema->schema = Generator::UNDEFINED; // 存在 schema 名的话，会影响 swagger-UI 的展示
+                $appendSchema->schema = Undefined::UNDEFINED; // 存在 schema 名的话，会影响 swagger-UI 的展示
             }
         }
         // mediaType 的 schema 是空的话，直接附加
@@ -348,9 +348,9 @@ final class SwaggerHelper
         /** @phpstan-ignore-next-line */
         $mediaType->schema->{$combineType} = $combined;
         /** @phpstan-ignore-next-line */
-        $mediaType->schema->properties = Generator::UNDEFINED;
+        $mediaType->schema->properties = Undefined::UNDEFINED;
         /** @phpstan-ignore-next-line */
-        $mediaType->schema->ref = Generator::UNDEFINED;
+        $mediaType->schema->ref = Undefined::UNDEFINED;
     }
 
     /**
@@ -391,11 +391,11 @@ final class SwaggerHelper
             $component instanceof AnSchema => 'schemas',
         };
 
-        if (Generator::isDefault($analysis->openapi->components)) {
+        if (Undefined::isDefault($analysis->openapi->components)) {
             $analysis->openapi->components = new Components([]);
         }
         $components = $analysis->openapi->components;
-        if (Generator::isDefault($components->{$type})) {
+        if (Undefined::isDefault($components->{$type})) {
             $components->{$type} = [];
         }
 
@@ -415,7 +415,7 @@ final class SwaggerHelper
      */
     public static function hasXInBodyProperty(Analysis $analysis, AnSchema $schema): bool
     {
-        if (!Generator::isDefault($schema->ref)) {
+        if (!Undefined::isDefault($schema->ref)) {
             $schema = $analysis->getAnnotationForSource(SwaggerHelper::getAnnotationClassName($schema));
             if (!$schema) {
                 return false;

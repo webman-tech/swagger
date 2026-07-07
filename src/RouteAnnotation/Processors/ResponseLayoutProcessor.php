@@ -11,7 +11,7 @@ use OpenApi\Annotations\Schema as AnSchema;
 use OpenApi\Attributes\Items;
 use OpenApi\Attributes\Property;
 use OpenApi\Attributes\Schema;
-use OpenApi\Generator;
+use OpenApi\Undefined;
 use WebmanTech\Swagger\DTO\SchemaConstants;
 use WebmanTech\Swagger\Helper\SwaggerHelper;
 
@@ -40,7 +40,7 @@ final class ResponseLayoutProcessor
         $operations = $analysis->getAnnotationsOfType(AnOperation::class);
 
         foreach ($operations as $operation) {
-            $undefinedOperationLayoutKey = Generator::UNDEFINED;
+            $undefinedOperationLayoutKey = Undefined::UNDEFINED;
             $layoutClass = SwaggerHelper::getAnnotationXValue($operation, SchemaConstants::X_RESPONSE_LAYOUT, $undefinedOperationLayoutKey, remove: true);
             if (
                 ($layoutClass === $undefinedOperationLayoutKey && !$globalLayoutSchema) // 未配置且全局也没有
@@ -69,12 +69,12 @@ final class ResponseLayoutProcessor
                 new Schema(ref: Components::ref($layoutSchema)),
             ];
 
-            if (!Generator::isDefault($schema->allOf)) {
+            if (!Undefined::isDefault($schema->allOf)) {
                 // 将 allOf 和 struct 合并
                 foreach ($schema->allOf as $item) {
                     $schemaAll[] = $this->wrapperSchema($item, $layoutDataCode);
                 }
-            } elseif (!Generator::isDefault($schema->oneOf)) {
+            } elseif (!Undefined::isDefault($schema->oneOf)) {
                 // oneOf 只能单独
                 $schemaAll[] = new Schema(
                     properties: [
@@ -85,7 +85,7 @@ final class ResponseLayoutProcessor
                         )
                     ],
                 );
-            } elseif (!Generator::isDefault($schema->properties) || !Generator::isDefault($schema->ref) || !Generator::isDefault($schema->items)) {
+            } elseif (!Undefined::isDefault($schema->properties) || !Undefined::isDefault($schema->ref) || !Undefined::isDefault($schema->items)) {
                 // 单 schema 与 struct 合并
                 $schemaAll[] = $this->wrapperSchema($schema, $layoutDataCode);
             }
@@ -108,7 +108,7 @@ final class ResponseLayoutProcessor
     private function wrapperSchema(AnSchema $schema, string $layoutDataCode): AnSchema
     {
         $newSchema = null;
-        if (!Generator::isDefault($schema->ref)) {
+        if (!Undefined::isDefault($schema->ref)) {
             $newSchema = new Schema(
                 properties: [
                     new Property(
@@ -117,10 +117,10 @@ final class ResponseLayoutProcessor
                     )
                 ],
             );
-        } elseif (!Generator::isDefault($schema->properties)) {
+        } elseif (!Undefined::isDefault($schema->properties)) {
             $property = new Property(
                 property: $layoutDataCode,
-                required: Generator::isDefault($schema->required) ? null : $schema->required,
+                required: Undefined::isDefault($schema->required) ? null : $schema->required,
                 type: 'object',
             );
             $property->properties = $schema->properties;
@@ -129,12 +129,12 @@ final class ResponseLayoutProcessor
                     $property,
                 ],
             );
-        } elseif (!Generator::isDefault($schema->items) && $schema->items instanceof Items) {
+        } elseif (!Undefined::isDefault($schema->items) && $schema->items instanceof Items) {
             $newSchema = new Schema(
                 properties: [
                     new Property(
                         property: $layoutDataCode,
-                        required: Generator::isDefault($schema->required) ? null : $schema->required,
+                        required: Undefined::isDefault($schema->required) ? null : $schema->required,
                         type: 'array',
                         items: $schema->items,
                     )

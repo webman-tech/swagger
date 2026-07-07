@@ -4,7 +4,7 @@ namespace WebmanTech\Swagger\Overwrite\Processors;
 
 use OpenApi\Analysis;
 use OpenApi\Annotations as OA;
-use OpenApi\Generator;
+use OpenApi\Undefined;
 
 /**
  * @internal
@@ -23,7 +23,7 @@ final class ExpandEnums extends \OpenApi\Processors\ExpandEnums
 
         foreach ($schemas as $schema) {
             if ($schema->_context->is('enum')) {
-                if (Generator::isDefault($schema->schema)) {
+                if (Undefined::isDefault($schema->schema)) {
                     call_user_func($this->schemaNameFormatter, $schema);
                 }
             }

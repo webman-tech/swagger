@@ -6,7 +6,7 @@ use OpenApi\Analysis;
 use OpenApi\Annotations\MediaType as AnMediaType;
 use OpenApi\Annotations\Operation as AnOperation;
 use OpenApi\Annotations\Schema as AnSchema;
-use OpenApi\Generator;
+use OpenApi\Undefined;
 use WebmanTech\DTO\BaseRequestDTO;
 use WebmanTech\Swagger\DTO\SchemaConstants;
 use WebmanTech\Swagger\Helper\SwaggerHelper;
@@ -36,14 +36,14 @@ final class AppendValidationRulesToOperationDescriptionProcessor
 
     private function getOperationValidationRules(AnOperation $operation, Analysis $analysis): array
     {
-        if (Generator::isDefault($operation->requestBody) || Generator::isDefault($operation->requestBody->content)) {
+        if (Undefined::isDefault($operation->requestBody) || Undefined::isDefault($operation->requestBody->content)) {
             return [];
         }
 
         $mergedValidationRules = [];
         foreach ($operation->requestBody->content as $mediaType) {
             /** @phpstan-ignore-next-line instanceof.alwaysTrue — stub 简化了 content 元素类型，运行时可能含非 MediaType 值 */
-            if (!$mediaType instanceof AnMediaType || Generator::isDefault($mediaType->schema)) {
+            if (!$mediaType instanceof AnMediaType || Undefined::isDefault($mediaType->schema)) {
                 continue;
             }
 
@@ -69,7 +69,7 @@ final class AppendValidationRulesToOperationDescriptionProcessor
     {
         $schemas = [];
 
-        if (is_string($schema->ref) && !Generator::isDefault($schema->ref)) {
+        if (is_string($schema->ref) && !Undefined::isDefault($schema->ref)) {
             $resolved = $this->findSchemaByRef($schema->ref, $analysis);
             if ($resolved) {
                 $schemas[] = $resolved;
@@ -86,7 +86,7 @@ final class AppendValidationRulesToOperationDescriptionProcessor
             }
         }
 
-        if (!$schemas && Generator::isDefault($schema->ref)) {
+        if (!$schemas && Undefined::isDefault($schema->ref)) {
             $schemas[] = $schema;
         }
 
@@ -101,7 +101,7 @@ final class AppendValidationRulesToOperationDescriptionProcessor
         }
         $schemaName = substr($ref, strlen($prefix));
         $openapi = $analysis->openapi;
-        if ($openapi === null || Generator::isDefault($openapi->components)) {
+        if ($openapi === null || Undefined::isDefault($openapi->components)) {
             return null;
         }
         $componentSchemas = SwaggerHelper::getValue($openapi->components->schemas, []);
@@ -117,7 +117,7 @@ final class AppendValidationRulesToOperationDescriptionProcessor
 
     private function appendValidationRulesInDescription(AnOperation $operation, array $validationRules): void
     {
-        if (Generator::isDefault($operation->description)) {
+        if (Undefined::isDefault($operation->description)) {
             $operation->description = '';
         } else {
             $operation->description .= "\n";

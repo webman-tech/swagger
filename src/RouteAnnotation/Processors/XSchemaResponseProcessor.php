@@ -9,7 +9,7 @@ use OpenApi\Annotations\Response as AnResponse;
 use OpenApi\Annotations\Schema as AnSchema;
 use OpenApi\Attributes\Schema;
 use OpenApi\Context;
-use OpenApi\Generator;
+use OpenApi\Undefined;
 use WebmanTech\Swagger\DTO\SchemaConstants;
 use WebmanTech\Swagger\Enums\PropertyInEnum;
 use WebmanTech\Swagger\Helper\SwaggerHelper;
@@ -120,7 +120,7 @@ final class XSchemaResponseProcessor
             }
         }
         // schema 是 ref 的情况下，取到真实的 schema
-        if (!Generator::isDefault($schema->ref)) {
+        if (!Undefined::isDefault($schema->ref)) {
             $schema = $this->analysis->getAnnotationForSource(SwaggerHelper::getAnnotationClassName($schema));
         }
         if (!$schema) {
@@ -160,7 +160,7 @@ final class XSchemaResponseProcessor
     private function isEmptySchema(AnSchema $schema): bool
     {
         // 如果是 ref，检查真实的 schema
-        if (!Generator::isDefault($schema->ref)) {
+        if (!Undefined::isDefault($schema->ref)) {
             $realSchema = $this->analysis->getAnnotationForSource(SwaggerHelper::getAnnotationClassName($schema));
             if ($realSchema) {
                 return $this->isEmptySchema($realSchema);
@@ -179,7 +179,7 @@ final class XSchemaResponseProcessor
         }
 
         // 检查 additionalProperties
-        if (!Generator::isDefault($schema->additionalProperties)) {
+        if (!Undefined::isDefault($schema->additionalProperties)) {
             return false;
         }
 

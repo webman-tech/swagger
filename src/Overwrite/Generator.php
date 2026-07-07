@@ -7,8 +7,9 @@ use Illuminate\Support\Str;
 use OpenApi\Analysis as OAAnalysis;
 use OpenApi\Annotations as OA;
 use OpenApi\Context;
-use OpenApi\Pipeline;
 use OpenApi\Processors as OAProcessors;
+use OpenApi\Undefined;
+use OpenApi\Utils\Pipeline;
 use WebmanTech\Swagger\DTO\ConfigOpenapiDocDTO;
 use WebmanTech\Swagger\Helper\SwaggerHelper;
 use WebmanTech\Swagger\RouteAnnotation;
@@ -48,7 +49,7 @@ final class Generator extends \OpenApi\Generator
         if (!$this->schemaNameShouldFormat) {
             return;
         }
-        if (!self::isDefault($schema->schema)) {
+        if (!Undefined::isDefault($schema->schema)) {
             // 主动命名过的不处理
             return;
         }

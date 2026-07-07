@@ -9,7 +9,7 @@ use OpenApi\Attributes\Components;
 use OpenApi\Attributes\Discriminator;
 use OpenApi\Attributes\Property;
 use OpenApi\Attributes\Schema;
-use OpenApi\Generator;
+use OpenApi\Undefined;
 use WebmanTech\DTO\Attributes\ValidationRulesDiscriminator;
 use WebmanTech\Swagger\DTO\SchemaConstants;
 use WebmanTech\Swagger\Helper\SwaggerHelper;
@@ -41,7 +41,7 @@ final class XDiscriminatorProcessor
 
     private function transformSchema(AnSchema $schema): void
     {
-        if (Generator::isDefault($schema->properties)) {
+        if (Undefined::isDefault($schema->properties)) {
             return;
         }
 
@@ -119,10 +119,10 @@ final class XDiscriminatorProcessor
             if ($openApi === null) {
                 return;
             }
-            if (Generator::isDefault($openApi->components)) {
+            if (Undefined::isDefault($openApi->components)) {
                 $openApi->components = new Components();
             }
-            if (Generator::isDefault($openApi->components->schemas)) {
+            if (Undefined::isDefault($openApi->components->schemas)) {
                 $openApi->components->schemas = [];
             }
             $openApi->components->schemas[$variantSchemaName] = $variantSchema;

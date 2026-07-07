@@ -5,7 +5,7 @@ namespace WebmanTech\Swagger\RouteAnnotation\Processors;
 use OpenApi\Analysis;
 use OpenApi\Annotations\Operation as AnOperation;
 use OpenApi\Annotations\Tag as AnTag;
-use OpenApi\Generator;
+use OpenApi\Undefined;
 use WebmanTech\Swagger\Helper\SwaggerHelper;
 
 /**
@@ -40,7 +40,7 @@ final class MergeClassInfoProcessor
 
     private function appendTagToOperation(AnOperation $operation, AnTag $classTag): void
     {
-        if (Generator::isDefault($operation->tags)) {
+        if (Undefined::isDefault($operation->tags)) {
             $operation->tags = [];
         }
         if (in_array($this->skipClassTag, $operation->tags, true)) {

@@ -3,7 +3,7 @@
 namespace WebmanTech\Swagger\Overwrite\Processors;
 
 use OpenApi\Annotations\Schema as AnSchema;
-use OpenApi\Generator;
+use OpenApi\Undefined;
 
 /**
  * @internal
@@ -20,7 +20,7 @@ final class AugmentSchemas extends \OpenApi\Processors\AugmentSchemas
             if (!$schema->isRoot(AnSchema::class)) {
                 continue;
             }
-            if (Generator::isDefault($schema->schema)) {
+            if (Undefined::isDefault($schema->schema)) {
                 call_user_func($this->schemaNameFormatter, $schema);
             }
         }

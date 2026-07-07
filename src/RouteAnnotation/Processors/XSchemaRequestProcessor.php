@@ -7,7 +7,7 @@ use OpenApi\Annotations\Operation as AnOperation;
 use OpenApi\Annotations\Property as AnProperty;
 use OpenApi\Annotations\Schema as AnSchema;
 use OpenApi\Context;
-use OpenApi\Generator;
+use OpenApi\Undefined;
 use WebmanTech\Swagger\DTO\SchemaConstants;
 use WebmanTech\Swagger\Enums\PropertyInEnum;
 use WebmanTech\Swagger\Helper\SwaggerHelper;
@@ -108,7 +108,7 @@ final class XSchemaRequestProcessor
             }
         }
         // schema 是 ref 的情况下，取到真实的 schema
-        if (!Generator::isDefault($schema->ref)) {
+        if (!Undefined::isDefault($schema->ref)) {
             $schema = $this->analysis->getAnnotationForSource(SwaggerHelper::getAnnotationClassName($schema));
         }
         if (!$schema) {
@@ -145,7 +145,7 @@ final class XSchemaRequestProcessor
             // 设定为 in form 的情况
             return 1;
         }
-        if (!Generator::isDefault($schema->ref)) {
+        if (!Undefined::isDefault($schema->ref)) {
             // 使用 ref 的情况，取真实 schema
             $schema = $this->analysis->getAnnotationForSource(SwaggerHelper::getAnnotationClassName($schema));
             if (!$schema) {
@@ -206,7 +206,7 @@ final class XSchemaRequestProcessor
             }
         }
         // schema 是 ref 的情况下，取到真实的 schema
-        if (!Generator::isDefault($schema->ref)) {
+        if (!Undefined::isDefault($schema->ref)) {
             $schema = $this->analysis->getAnnotationForSource(SwaggerHelper::getAnnotationClassName($schema));
             if ($schema) {
                 $parameters = $this->transferSchemaProperties2parameters($schema, $context, $propertyIn);

@@ -7,6 +7,7 @@ use OpenApi\Analysis;
 use OpenApi\Annotations as OA;
 use OpenApi\Context;
 use OpenApi\Generator;
+use OpenApi\Undefined;
 use Symfony\Component\Finder\Finder;
 use WebmanTech\Swagger\DTO\SchemaConstants;
 use WebmanTech\Swagger\Helper\SwaggerHelper;
@@ -60,12 +61,12 @@ final class Reader
         }
 
         $data = [];
-        if (!Generator::isDefault($openapi->paths)) {
+        if (!Undefined::isDefault($openapi->paths)) {
             foreach ($openapi->paths as $path) {
                 foreach ($this->pathItemOperationAttributes as $method) {
                     /** @var string|OA\Operation $operation */
                     $operation = $path->{$method};
-                    if (Generator::isDefault($operation)) {
+                    if (Undefined::isDefault($operation)) {
                         continue;
                     }
                     if (!$operation instanceof OA\Operation) {

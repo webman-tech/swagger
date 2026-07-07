@@ -6,7 +6,7 @@ use Illuminate\Support\Str;
 use OpenApi\Analysis;
 use OpenApi\Annotations\Schema as AnSchema;
 use OpenApi\Attributes\Schema;
-use OpenApi\Generator;
+use OpenApi\Undefined;
 use WebmanTech\Swagger\Helper\SwaggerHelper;
 
 /**
@@ -41,7 +41,7 @@ final readonly class ExpandEnumDescriptionProcessor
         );
 
         foreach ($schemas as $schema) {
-            if (!Generator::isDefault($schema->enum) && $schema->_context->is('enum')) {
+            if (!Undefined::isDefault($schema->enum) && $schema->_context->is('enum')) {
                 $className = $schema->_context->fullyQualifiedName($schema->_context->enum);
                 $caseDesc = [];
                 if ($className !== null && is_a($className, \BackedEnum::class, true)) {

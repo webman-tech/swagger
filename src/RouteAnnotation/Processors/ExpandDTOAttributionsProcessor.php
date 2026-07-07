@@ -11,7 +11,7 @@ use OpenApi\Attributes\Components;
 use OpenApi\Attributes\Items;
 use OpenApi\Attributes\Property;
 use OpenApi\Attributes\Schema;
-use OpenApi\Generator;
+use OpenApi\Undefined;
 use ReflectionProperty;
 use WebmanTech\DTO\Attributes\RequestPropertyIn;
 use WebmanTech\DTO\Attributes\ValidationRules;
@@ -65,7 +65,7 @@ final class ExpandDTOAttributionsProcessor
                     continue;
                 }
             }
-            if (!Generator::isDefault($schema->properties)) {
+            if (!Undefined::isDefault($schema->properties)) {
                 $factory = ReflectionReaderFactory::fromClass($className);
                 $schemaRequired = SwaggerHelper::getValue($schema->required, []);
                 foreach ($schema->properties as $property) {
@@ -106,7 +106,7 @@ final class ExpandDTOAttributionsProcessor
 
     private function fixType(AnProperty $property): void
     {
-        if (!Generator::isDefault($property->type)) {
+        if (!Undefined::isDefault($property->type)) {
             return;
         }
         // 自定义类型
@@ -168,11 +168,11 @@ final class ExpandDTOAttributionsProcessor
             && $validationRules->object === null;
 
         // 如果检测到多维数组，清除 swagger-php 可能设置的 ref
-        if ($isMultiDimensionalArray && !Generator::isDefault($property->ref)) {
-            $property->ref = Generator::UNDEFINED;
+        if ($isMultiDimensionalArray && !Undefined::isDefault($property->ref)) {
+            $property->ref = Undefined::UNDEFINED;
         }
 
-        if (Generator::isDefault($property->type)) {
+        if (Undefined::isDefault($property->type)) {
             $property->type = match (true) {
                 $isMultiDimensionalArray => 'array', // 多维数组应该是 array 类型
                 $validationRules->integer => 'integer',
@@ -181,7 +181,7 @@ final class ExpandDTOAttributionsProcessor
                 $validationRules->string => 'string',
                 $validationRules->object !== null => 'object',
                 $validationRules->array => 'array',
-                default => Generator::UNDEFINED,
+                default => Undefined::UNDEFINED,
             };
         } elseif ($property->type === 'object' && $isMultiDimensionalArray) {
             // swagger-php 可能已经设置了 type 为 object，修正为 array
@@ -191,27 +191,27 @@ final class ExpandDTOAttributionsProcessor
             // php 定义是数组，但是实际可能是 object 的情况
             $property->type = 'object';
         }
-        if (Generator::isDefault($property->minimum) && $validationRules->min) {
+        if (Undefined::isDefault($property->minimum) && $validationRules->min) {
             $property->minimum = $validationRules->min;
         }
-        if (Generator::isDefault($property->maximum) && $validationRules->max) {
+        if (Undefined::isDefault($property->maximum) && $validationRules->max) {
             $property->maximum = $validationRules->max;
         }
-        if (Generator::isDefault($property->minLength) && $validationRules->minLength) {
+        if (Undefined::isDefault($property->minLength) && $validationRules->minLength) {
             $property->minLength = $validationRules->minLength;
         }
-        if (Generator::isDefault($property->maxLength) && $validationRules->maxLength) {
+        if (Undefined::isDefault($property->maxLength) && $validationRules->maxLength) {
             $property->maxLength = $validationRules->maxLength;
         }
 
-        if (Generator::isDefault($property->nullable) && $validationRules->nullable) {
+        if (Undefined::isDefault($property->nullable) && $validationRules->nullable) {
             $property->nullable = true;
         }
         if ($property->type === 'array') {
             // array 类型时，必须 Items
             // 检查是否需要重新设置 items（多维数组的情况需要重新设置）
-            $needsResetItems = Generator::isDefault($property->items)
-                || Generator::isDefault($property->items->type)
+            $needsResetItems = Undefined::isDefault($property->items)
+                || Undefined::isDefault($property->items->type)
                 || ($validationRules->arrayItem instanceof ValidationRules
                     && $validationRules->arrayItem->arrayItem !== null); // 多维数组
 
@@ -263,8 +263,8 @@ final class ExpandDTOAttributionsProcessor
                         nullable: $validationRules->objectValueNullable ?? $validationRules->nullable,
                     );
                     // 清除错误的 description（swagger-php 把类型字符串当作 description 了）
-                    if (!Generator::isDefault($property->description) && str_contains($property->description, '[]>')) {
-                        $property->description = Generator::UNDEFINED;
+                    if (!Undefined::isDefault($property->description) && str_contains($property->description, '[]>')) {
+                        $property->description = Undefined::UNDEFINED;
                     }
                 } else {
                     // arrayItem 定义为简单的 ValidationRules 的情况
@@ -334,7 +334,7 @@ final class ExpandDTOAttributionsProcessor
 
     private function fillDefault(AnProperty $property, ReflectionProperty $reflection): void
     {
-        if (!Generator::isDefault($property->default)) {
+        if (!Undefined::isDefault($property->default)) {
             return;
         }
         SwaggerHelper::setValue($property->default, $reflection->getDefaultValue());
@@ -345,7 +345,7 @@ final class ExpandDTOAttributionsProcessor
      */
     private function fixExample(AnProperty $property): void
     {
-        if (Generator::isDefault($property->example) || !is_string($property->example)) {
+        if (Undefined::isDefault($property->example) || !is_string($property->example)) {
             return;
         }
 

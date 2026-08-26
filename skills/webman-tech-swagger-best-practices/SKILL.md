@@ -1,6 +1,6 @@
 ---
 name: webman-tech-swagger-best-practices
-description: webman-tech/swagger 最佳实践。使用场景：用户为 webman 接口编写 OpenAPI 文档时，给出明确的推荐写法。
+description: OpenAPI 文档生成。触发：DTO 注解、@handle 模式、Schema 定义、多文档、安全配置、UI 定制。
 ---
 
 # webman-tech/swagger 最佳实践
@@ -329,58 +329,7 @@ enum StatusEnum: string
 
 ## 安全配置
 
-### IP/Host 限制
-
-生产环境禁止外网访问文档：
-
-```php
-'host_forbidden' => [
-    'enable' => true,
-    'ip_white_list_intranet' => true,  // 允许所有内网 IP
-    'ip_white_list' => ['1.2.3.4'],    // 额外允许的 IP
-    'host_white_list' => ['admin.example.com'],  // 允许的 host
-],
-```
-
-### Basic 认证
-
-需要用户名密码才能访问 Swagger UI：
-
-```php
-// config/plugin/webman-tech/swagger/app.php
-'basic_auth' => [
-    'enable' => true,
-    'username' => 'admin',
-    'password' => 'your-secure-password',
-    'realm' => 'API Documentation',  // 可选，认证提示信息
-],
-```
-
-也可以在 `registerRoute` 时通过 `global_route` 配置：
-
-```php
-'global_route' => [
-    'basic_auth' => [
-        'enable' => true,
-        'username' => 'admin',
-        'password' => 'secret',
-    ],
-],
-```
-
-两种安全机制（IP 限制 + Basic Auth）可以同时启用，按顺序执行。
-
-### 自定义中间件
-
-如需更复杂的认证（如基于 auth 包的登录认证），通过 `middlewares` 配置：
-
-```php
-'global_route' => [
-    'middlewares' => [
-        new \WebmanTech\Auth\Middleware\Authentication('admin'),
-    ],
-],
-```
+生产环境需要保护 API 文档，详见 [references/security.md](references/security.md)。
 
 ---
 

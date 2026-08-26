@@ -66,11 +66,13 @@ final class ExpandEloquentModelProcessor implements GeneratorAwareInterface
 
         if ($docComment) {
             $matches = [];
-            preg_match_all('/@property\s+(.*?)\s+(.*?)\s(.*)/', $docComment, $matches);
+            // 行内匹配（[ \t] 不匹配换行）：description 可省略，省略时下一行不会被误当作当前属性的描述
+            // （laravel-idea 等工具生成的 @property 默认不带 description）
+            preg_match_all('/@property[ \t]+(\S+)[ \t]+(\S+)[ \t]*(.*)/', $docComment, $matches);
             for ($i = 0; $i < count($matches[0]); $i++) {
                 $type = $matches[1][$i];
                 $name = $matches[2][$i];
-                $desc = $matches[3][$i];
+                $desc = $matches[3][$i] ?? '';
                 // name 处理
                 if (!str_starts_with($name, '$')) {
                     continue;

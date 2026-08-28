@@ -337,6 +337,10 @@ final class ExpandDTOAttributionsProcessor
         if (!Undefined::isDefault($property->default)) {
             return;
         }
+        // 无默认值的属性不设置 default（PHP 8.5 起对无默认值属性调 getDefaultValue() 触发 deprecation）
+        if (!$reflection->hasDefaultValue()) {
+            return;
+        }
         SwaggerHelper::setValue($property->default, $reflection->getDefaultValue());
     }
 
